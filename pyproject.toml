@@ -1,0 +1,92 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "Process DCM"
+version = "0.0.1"
+description = "Python library and app to extract images from DCM in private-eye format"
+authors = ["Alan Silva <3899850+alanwilter@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{ include = "process_dcm" }]
+license = "Proprietary"
+repository = "https://github.com/alanwilter/process_dcm"
+classifiers = ["Programming Language :: Python :: 3 :: Only"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+opencv-python-headless = "^4.10.0.84"
+typer = "^0.12.3"
+tqdm = "^4.66.4"
+pydicom = "^2.4.4"
+natsort = "^8.4.0"
+pillow = "^10.4.0"
+python-gdcm = "^3.0.24.1"
+
+[tool.poetry.scripts]
+process-dcm = "process_dcm.main:cli"
+
+[tool.poetry.group.dev.dependencies]
+boto3-stubs = { extras = ["lambda", "s3"], version = "*" }
+ipdb = "*"
+ipython = "*"
+jupyterlab = "*"
+mypy = "*"
+mypy-boto3-lambda = "*"
+mypy-boto3-s3 = "*"
+pandas-stubs = "*"
+pdbpp = "*"
+pip = "*"
+pre-commit = "*"
+pytest-cov = "*"
+pytest-env = "*"
+pytest-xdist = "*"
+ruff = "*"
+typed-argument-parser = "*"
+types-pillow = "*"
+types-tqdm = "*"
+wheel = "*"
+pytest-mock = "^3.14.0"
+
+[tool.pytest.ini_options]
+addopts = "tests --cov=process_dcm/ --cov-report=term-missing:skip-covered --cov-report=xml --dist=loadgroup -n 8 --durations=5"
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = ["UP", "RUF", "I", "D", "E501"]
+ignore = ["UP036"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D100", "D103", "D104"]
+
+[tool.mypy]
+python_version = "3.11"
+exclude = 'tests/'
+strict = true
+disable_error_code = ["type-arg"]
+
+# NOTE: uncomment these lines and edit accordingly if you have modules still without typings
+# [[tool.mypy.overrides]]
+# module = ["sklearn.*",]
+# ignore_missing_imports = true
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_files = ["process_dcm/__init__.py"]
+version_scheme = "pep440"
+version_provider = "poetry"
+update_changelog_on_bump = true
+major_version_zero = true

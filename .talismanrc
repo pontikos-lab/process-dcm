@@ -1,0 +1,10 @@
+fileignoreconfig:
+  - filename: .cruft.json
+    checksum: 03b17a0041ffe209156ea08f01b12f2cbb770b4570a6f6678ce8dcae4d945535
+  - filename: tests/test_main.py
+    checksum: 3e4ad81306892573518b0e85e38544a978e160e32608229231f8d9f2b2dcd83c
+  - filename: poetry.lock
+    checksum: dcc3890013a8be59f763d08cbe4081cf506c43553d5275abebe2df83514938a2
+  - filename: process_dcm/utils.py
+    checksum: 4427feb0e00b54eeda3d878b1457be0c0b62f7c39f68e0691442e4ad3988bbf2
+version: ""

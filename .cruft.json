@@ -1,0 +1,21 @@
+{
+  "template": "https://github.com/alanwilter/poetry-python-cookiecutter",
+  "commit": "40054b426e9c70af4df83c3e620a25633175b0a6",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "author_name": "Alan Silva",
+      "author_email": "3899850+alanwilter@users.noreply.github.com",
+      "github_username": "alanwilter",
+      "project_name": "Process DCM",
+      "project_slug": "process_dcm",
+      "dist_name": "process-dcm",
+      "project_description": "Python library and app to extract images from DCM in private-eye format",
+      "python_version": "3.11",
+      "version": "0.0.1",
+      "license": "Proprietary",
+      "_template": "https://github.com/alanwilter/poetry-python-cookiecutter"
+    }
+  },
+  "directory": null
+}
