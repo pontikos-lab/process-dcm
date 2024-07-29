@@ -12,7 +12,7 @@ from process_dcm.utils import find_dcm_subfolders, process_dcm
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
 out_msg = """Output directory for extracted images and metadata. Defaults to: __input_dir__/exported_data\n
-Use absolut path if you want to save the output in a specific location."""
+Use absolute path if you want to save the output in a specific location."""
 
 
 def print_version(value: bool) -> None:

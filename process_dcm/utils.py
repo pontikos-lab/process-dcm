@@ -8,7 +8,6 @@ import warnings
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
 
 import cv2
 import numpy as np
