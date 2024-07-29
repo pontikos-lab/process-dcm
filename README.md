@@ -1,9 +1,9 @@
 # Process DCM
 
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=plastic)](https://github.com/alanwilter/process-dcm/graphs/commit-activity)
-[![GitHub](https://img.shields.io/github/license/alanwilter/process-dcm?style=plastic)](https://github.com/alanwilter/process-dcm)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/alanwilter/process-dcm?display_name=tag&logo=github&style=plastic)](https://github.com/alanwilter/process-dcm)
-[![GitHub Release](https://img.shields.io/github/release-date/alanwilter/process-dcm?style=plastic&logo=github)](https://github.com/alanwilter/process-dcm)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=plastic)](https://github.com/Moorfields-Reading-Centre/process-dcm/graphs/commit-activity)
+[![GitHub](https://img.shields.io/github/license/Moorfields-Reading-Centre/process-dcm?style=plastic)](https://github.com/Moorfields-Reading-Centre/process-dcm)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/Moorfields-Reading-Centre/process-dcm?display_name=tag&logo=github&style=plastic)](https://github.com/Moorfields-Reading-Centre/process-dcm)
+[![GitHub Release](https://img.shields.io/github/release-date/Moorfields-Reading-Centre/process-dcm?style=plastic&logo=github)](https://github.com/Moorfields-Reading-Centre/process-dcm)
 [![Poetry](https://img.shields.io/endpoint?style=plastic&url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 [![Ruff](https://img.shields.io/endpoint?style=plastic&url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=plastic)](https://github.com/pre-commit/pre-commit)
@@ -41,7 +41,7 @@ This Project depends on the [`poetry`](https://python-poetry.org/).
 1. Clone the repo
 
    ```sh
-   git clone https://github.com/alanwilter/process-dcm
+   git clone https://github.com/Moorfields-Reading-Centre/process-dcm
    cd process-dcm
    ```
 
