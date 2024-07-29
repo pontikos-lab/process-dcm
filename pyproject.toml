@@ -10,7 +10,7 @@ authors = ["Alan Silva <3899850+alanwilter@users.noreply.github.com>"]
 readme = "README.md"
 packages = [{ include = "process_dcm" }]
 license = "Proprietary"
-repository = "https://github.com/alanwilter/process_dcm"
+repository = "https://github.com/Moorfields-Reading-Centre/process-dcm"
 classifiers = ["Programming Language :: Python :: 3 :: Only"]
 
 [tool.poetry.dependencies]
