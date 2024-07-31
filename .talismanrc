@@ -8,5 +8,5 @@ fileignoreconfig:
   - filename: process_dcm/utils.py
     checksum: 4427feb0e00b54eeda3d878b1457be0c0b62f7c39f68e0691442e4ad3988bbf2
   - filename: .github/workflows/release.yml
-    checksum: 198dea1cff434b558d8839bed3280819d43e0660acc3d0020c378f185d26d282
+    checksum: 86fbb1303400278bbebbe4523cd4746b4f5e8d1ef036371c8e7a9cbfc0adc254
 version: ""

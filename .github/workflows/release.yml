@@ -1,0 +1,72 @@
+name: Test and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-release:
+    name: Test and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install poetry commitizen
+          poetry install
+
+      - name: Run tests
+        run: poetry run pytest
+
+      - name: Check if version bump is needed
+        id: check
+        run: |
+          cz bump --dry-run
+          echo "::set-output name=bump::$(cz bump --dry-run | grep -q 'bump:' && echo 'yes' || echo 'no')"
+
+      - name: Bump version
+        if: steps.check.outputs.bump == 'yes'
+        id: bump
+        run: |
+          cz bump --yes
+          echo "::set-output name=version::$(git describe --tags)"
+
+      - name: Build project
+        run: poetry build
+
+      - name: Create Release
+        if: steps.check.outputs.bump == 'yes'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.bump.outputs.version }}
+          release_name: Release ${{ steps.bump.outputs.version }}
+          body: $(cz changelog)
+          draft: false
+          prerelease: false
+
+      - name: Publish to PyPI
+        if: steps.check.outputs.bump == 'yes'
+        env:
+          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          poetry config pypi-token.pypi $PYPI_PASSWORD
+          poetry publish
+
+      - name: Push changes
+        if: steps.check.outputs.bump == 'yes'
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}

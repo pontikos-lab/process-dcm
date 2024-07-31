@@ -10,7 +10,7 @@ authors = ["Alan Silva <3899850+alanwilter@users.noreply.github.com>"]
 readme = "README.md"
 packages = [{ include = "process_dcm" }]
 license = "MIT"
-repository = "https://github.com/Moorfields-Reading-Centre/process-dcm"
+repository = "https://github.com/pontikos-lab/process-dcm"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
