@@ -3,15 +3,19 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "Process DCM"
+name = "process-dcm"
 version = "0.0.1"
 description = "Python library and app to extract images from DCM in private-eye format"
 authors = ["Alan Silva <3899850+alanwilter@users.noreply.github.com>"]
 readme = "README.md"
 packages = [{ include = "process_dcm" }]
-license = "Proprietary"
+license = "MIT"
 repository = "https://github.com/Moorfields-Reading-Centre/process-dcm"
-classifiers = ["Programming Language :: Python :: 3 :: Only"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -85,7 +89,7 @@ disable_error_code = ["type-arg"]
 [tool.commitizen]
 name = "cz_conventional_commits"
 tag_format = "$version"
-version_files = ["process_dcm/__init__.py"]
+version_files = ["process_dcm/__init__.py", "pyproject.toml"]
 version_scheme = "pep440"
 version_provider = "poetry"
 update_changelog_on_bump = true

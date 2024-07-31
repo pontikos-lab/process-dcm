@@ -12,7 +12,36 @@
 
 Python library and app to extract images from DCM files with metadata in private-eye format
 
-## Getting Started
+## Installation and Usage
+
+```bash
+pip install process-dcm
+```
+
+```bash
+ Usage: process-dcm [OPTIONS] INPUT_DIR
+
+ Process DICOM files in subfolders, extract images and metadata using parallel processing.
+
+╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    input_dir      TEXT  Input directory containing subfolders with DICOM files. [default: None] [required]                          │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --image_format        -f      TEXT     Image format for extracted images (png, jpg, webp). Defaults to: png [default: png]            │
+│ --output_dir          -o      TEXT     Output directory for extracted images and metadata. Defaults to: __input_dir__/exported_data   │
+│                                        Use absolute path if you want to save the output in a specific location.                       │
+│                                        [default: exported_data]                                                                       │
+│ --n_jobs              -j      INTEGER  Number of parallel jobs. Defaults to: 1 [default: 1]                                           │
+│ --overwrite           -w               Overwrite existing images if found.                                                            │
+│ --verbose             -v               Verbose output.                                                                                │
+│ --version             -V               Prints app version                                                                             │
+│ --install-completion                   Install completion for the current shell.                                                      │
+│ --show-completion                      Show completion for the current shell, to copy it or customize the installation.               │
+│ --help                -h               Show this message and exit.                                                                    │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## For Developers
 
 To run this project locally, you will need to install the prerequisites and follow the installation section.
 
@@ -45,32 +74,9 @@ This Project depends on the [`poetry`](https://python-poetry.org/).
    cd process-dcm
    ```
 
-## Usage
-
-```bash
- Usage: process-dcm [OPTIONS] INPUT_DIR
-
- Process DICOM files in subfolders, extract images and metadata using parallel processing.
-
-╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    input_dir      TEXT  Input directory containing subfolders with DICOM files. [default: None] [required]                          │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --image_format        -f      TEXT     Image format for extracted images (png, jpg, webp). Defaults to: png [default: png]            │
-│ --output_dir          -o      TEXT     Output directory for extracted images and metadata. Defaults to: __input_dir__/exported_data   │
-│                                        Use absolute path if you want to save the output in a specific location.                       │
-│                                        [default: exported_data]                                                                       │
-│ --n_jobs              -j      INTEGER  Number of parallel jobs. Defaults to: 1 [default: 1]                                           │
-│ --overwrite           -w               Overwrite existing images if found.                                                            │
-│ --verbose             -v               Verbose output.                                                                                │
-│ --version             -V               Prints app version                                                                             │
-│ --install-completion                   Install completion for the current shell.                                                      │
-│ --show-completion                      Show completion for the current shell, to copy it or customize the installation.               │
-│ --help                -h               Show this message and exit.                                                                    │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
-
 ## Bumping Version
+
+We use `commitizen`. The instructions below are only for exceptional cases.
 
 1. Using [poetry-bumpversion](https://github.com/monim67/poetry-bumpversion). Bump the version number by running `poetry version [part] [--dry-run]` where `[part]` is `major`, `minor`, or `patch`, depending on which part of the version number you want to bump.
 

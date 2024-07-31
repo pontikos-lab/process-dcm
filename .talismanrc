@@ -4,7 +4,9 @@ fileignoreconfig:
   - filename: tests/test_main.py
     checksum: 3e4ad81306892573518b0e85e38544a978e160e32608229231f8d9f2b2dcd83c
   - filename: poetry.lock
-    checksum: dcc3890013a8be59f763d08cbe4081cf506c43553d5275abebe2df83514938a2
+    checksum: f4cee8b1c6d6f33b5f34cbbfc093008bcfe7820a26df4225ccea2b3fa5e65e15
   - filename: process_dcm/utils.py
     checksum: 4427feb0e00b54eeda3d878b1457be0c0b62f7c39f68e0691442e4ad3988bbf2
+  - filename: .github/workflows/release.yml
+    checksum: 198dea1cff434b558d8839bed3280819d43e0660acc3d0020c378f185d26d282
 version: ""
