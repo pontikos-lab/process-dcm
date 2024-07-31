@@ -88,7 +88,7 @@ disable_error_code = ["type-arg"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-tag_format = "$version"
+tag_format = "v$version"
 version_files = ["process_dcm/__init__.py", "pyproject.toml"]
 version_scheme = "pep440"
 version_provider = "poetry"
