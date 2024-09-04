@@ -4,6 +4,7 @@
 [![GitHub](https://img.shields.io/github/license/pontikos-lab/process-dcm?style=plastic)](https://github.com/pontikos-lab/process-dcm)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/pontikos-lab/process-dcm?display_name=tag&logo=github&style=plastic)](https://github.com/pontikos-lab/process-dcm)
 [![GitHub Release](https://img.shields.io/github/release-date/pontikos-lab/process-dcm?style=plastic&logo=github)](https://github.com/pontikos-lab/process-dcm)
+[![PyPI](https://img.shields.io/pypi/v/process-dcm?style=plastic&logo=pypi)](https://pypi.org/project/process-dcm/)
 [![Poetry](https://img.shields.io/endpoint?style=plastic&url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 [![Ruff](https://img.shields.io/endpoint?style=plastic&url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=plastic)](https://github.com/pre-commit/pre-commit)
