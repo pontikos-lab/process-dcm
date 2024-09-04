@@ -73,7 +73,7 @@ def meta_images(dcm_obj: FileDataset) -> dict:
     meta: dict = defaultdict(dict)
     mod = dcm_obj.get("Modality")
     meta["modality"] = mod.value
-    meta["group"] = 0
+    meta["group"] = dcm_obj.get("AccessionNumber", 0)
     meta["size"]["width"] = dcm_obj.get("Columns", 0)
     meta["size"]["height"] = dcm_obj.get("Rows", 0)
     meta["field_of_view"] = dcm_obj.get("HorizontalFieldOfView")
