@@ -32,9 +32,10 @@ jobs:
 
       - name: Check if version bump is needed
         id: check
+        continue-on-error: true
         run: |
-          cz bump --dry-run
-          echo "bump=$(cz bump --dry-run 2>/dev/null | grep -q 'bump:' && echo 'yes' || echo 'no')" >> $GITHUB_OUTPUT
+          cz bump --dry-run || exit 0
+          echo "bump=$(cz bump --dry-run 2>&1 | grep -q 'bump:' && echo 'yes' || echo 'no')" >> $GITHUB_OUTPUT
 
       - name: Set up Git user
         run: |
