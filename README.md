@@ -91,8 +91,3 @@ We use `commitizen`. The instructions below are only for exceptional cases.
    git push
    git push --tags
    ```
-
-## Changelog
-
-- 0.0.1
-  - First commit
