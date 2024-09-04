@@ -1,3 +1,9 @@
+## v0.1.1 (2024-09-04)
+
+### Fix
+
+- :bug: Assign the right group id for multi-groups cases in metadata.json
+
 ## v0.1.0 (2024-07-31)
 
 ### Feat
