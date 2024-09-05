@@ -7,4 +7,6 @@ fileignoreconfig:
     checksum: 00912e74713f45921e593b5f1f98e23b324ab13bd5c9d44edb24c49a08f325b8
   - filename: process_dcm/utils.py
     checksum: fdb35056dbd109dbbac6fd5d3668fbff90ace8f46aa37b787eaa2572c02d0aaf
+  - filename: README.md
+    checksum: 4a9bf4e1400f36c5646be2b85eee66d1681d12e67bd9dce431206d21a7c85f64
 version: ""
