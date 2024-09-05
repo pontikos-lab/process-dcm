@@ -136,6 +136,7 @@ def test_main_abort():
         )
 
 
+# skip this test for CI
 def test_main_mapping_example_dir(janitor):
     input_dir = "tests/example_dir"
     image_format = "png"
@@ -162,6 +163,7 @@ def test_main_mapping_example_dir(janitor):
         assert get_md5(output_dir / "010-0002/20180926_R/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
 
 
+# skip this test for CI
 def test_main_mapping_example_dir_relative(janitor):
     input_dir = "tests/example_dir"
     image_format = "png"
