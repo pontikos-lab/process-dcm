@@ -1,3 +1,9 @@
+## v0.2.0 (2024-09-05)
+
+### Feat
+
+- :sparkles: Added anonymiser option by default
+
 ## v0.1.1 (2024-09-04)
 
 ### Fix
