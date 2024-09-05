@@ -1,12 +1,10 @@
 fileignoreconfig:
-  - filename: .cruft.json
-    checksum: 03b17a0041ffe209156ea08f01b12f2cbb770b4570a6f6678ce8dcae4d945535
   - filename: tests/test_main.py
-    checksum: 3e4ad81306892573518b0e85e38544a978e160e32608229231f8d9f2b2dcd83c
-  - filename: poetry.lock
-    checksum: f4cee8b1c6d6f33b5f34cbbfc093008bcfe7820a26df4225ccea2b3fa5e65e15
+    checksum: efa949f7b639498667939891d29938f01047b7b9a70ffd61a74d47cd127ddbf8
+  - filename: process_dcm/main.py
+    checksum: 3b69ef0a904c0b9e04574fc70e4a35bcf0ed23a75ef9ff99ce6bf80cbaa43551
+  - filename: tests/test_utils.py
+    checksum: 00912e74713f45921e593b5f1f98e23b324ab13bd5c9d44edb24c49a08f325b8
   - filename: process_dcm/utils.py
-    checksum: 4427feb0e00b54eeda3d878b1457be0c0b62f7c39f68e0691442e4ad3988bbf2
-  - filename: .github/workflows/release.yml
-    checksum: 86fbb1303400278bbebbe4523cd4746b4f5e8d1ef036371c8e7a9cbfc0adc254
+    checksum: fdb35056dbd109dbbac6fd5d3668fbff90ace8f46aa37b787eaa2572c02d0aaf
 version: ""

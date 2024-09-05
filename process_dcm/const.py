@@ -3,6 +3,8 @@
 from enum import Enum, Flag, auto, unique
 from typing import cast
 
+RESERVED_CSV = "patient_2_study_id.csv"
+
 
 class ModalityFlag(Flag):
     """A flag representing different modalities in DICOM files."""

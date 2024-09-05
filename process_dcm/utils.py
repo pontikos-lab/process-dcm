@@ -1,9 +1,12 @@
 """utils module."""
 
+import csv
+import filecmp
 import hashlib
 import json
 import os
 import shutil
+import tempfile
 import warnings
 from collections import defaultdict
 from datetime import datetime
@@ -16,7 +19,7 @@ from PIL import Image
 from pydicom.dataset import FileDataset
 from pydicom.filereader import dcmread
 
-from process_dcm.const import ImageModality
+from process_dcm.const import RESERVED_CSV, ImageModality
 
 warnings.filterwarnings("ignore", category=UserWarning, message="A value of type *")
 
@@ -123,12 +126,20 @@ def meta_images(dcm_obj: FileDataset) -> dict:
     return meta
 
 
-def process_dcm_meta(dcm_objs: list[FileDataset], output_dir: str) -> None:
+boo = "hello"
+
+
+def process_dcm_meta(
+    dcm_objs: list[FileDataset], output_dir: str, mapping: str = "", keep: str = ""
+) -> tuple[str, str]:
     """Extract and save metadata from a list of DICOM files to a JSON file.
 
     Args:
         dcm_objs (list[FileDataset]): A list of FileDataset objects representing the DICOM files.
         output_dir (str): The directory where the metadata JSON file will be saved.
+        mapping (str): Optional path to the CSV file containing patient ID to study ID mapping.
+                       If not provided and patient_id is not anonymised, a '{RESERVED_CSV}' file will be generated.
+        keep (str): String containing the letters indicating which fields to keep (p, n, d, D, g).
 
     Returns:
         None
@@ -141,17 +152,56 @@ def process_dcm_meta(dcm_objs: list[FileDataset], output_dir: str) -> None:
     metadata["images"]["images"] = []
     metadata["parser_version"] = [1, 5, 2]
     metadata["py_dcm_version"] = [0, 1, 0]
+
+    keep_gender = "g" in keep
+    keep_names = "n" in keep
+    keep_patient_key = "p" in keep
+
+    # Read the mapping file if provided
+    patient_to_study = {}
+    if mapping:
+        patient_to_study = dict(read_csv(mapping))
+
+    original_patient_key = ""
+    new_patient_key = ""
+
     for dcm_obj in dcm_objs:
-        metadata["patient"]["patient_key"] = dcm_obj.get("PatientID")
-        metadata["patient"]["first_name"] = dcm_obj.get("PatientName.name_prefix")
-        metadata["patient"]["last_name"] = dcm_obj.get("PatientName.name_suffix")
-        metadata["patient"]["date_of_birth"] = do_date(dcm_obj.get("PatientBirthDate"), "%Y%m%d", "%Y-%m-%d")
-        metadata["patient"]["gender"] = dcm_obj.get("PatientSex")
+        patient_key = dcm_obj.get("PatientID", "")
+        original_patient_key = patient_key
+        if patient_key in patient_to_study:
+            patient_key = patient_to_study[patient_key]
+        elif not keep_patient_key:
+            patient_key = get_hash(patient_key)
+
+        new_patient_key = patient_key
+
+        first_name = dcm_obj.get("PatientName.name_prefix")
+        last_name = dcm_obj.get("PatientName.name_suffix")
+        if not keep_names:
+            first_name = None if first_name else first_name
+            last_name = None if last_name else last_name
+
+        date_of_birth = do_date(dcm_obj.get("PatientBirthDate", "10010101"), "%Y%m%d", "%Y-%m-%d")
+        if "D" in keep:
+            year = date_of_birth[:4]
+            date_of_birth = f"{year}-01-01"
+        elif "d" not in keep:
+            date_of_birth = "1001-01-01"
+
+        gender = dcm_obj.get("PatientSex")
+        if not keep_gender:
+            gender = None if gender else gender
+
+        metadata["patient"]["patient_key"] = patient_key
+        metadata["patient"]["first_name"] = first_name
+        metadata["patient"]["last_name"] = last_name
+        metadata["patient"]["date_of_birth"] = date_of_birth
+        metadata["patient"]["gender"] = gender
         metadata["patient"]["source_id"] = dcm_obj.get("StudyInstanceUID")
 
         metadata["exam"]["manufacturer"] = dcm_obj.get("Manufacturer")
         metadata["exam"]["scan_datetime"] = do_date(
-            dcm_obj.get("AcquisitionDateTime"), "%Y%m%d%H%M%S.%f", "%Y-%m-%d %H:%M:%S"
+            dcm_obj.get("AcquisitionDateTime", "00000000"), "%Y%m%d%H%M%S.%f", "%Y-%m-%d %H:%M:%S"
         )
         metadata["exam"]["scanner_model"] = dcm_obj.get("ManufacturerModelName")
         metadata["exam"]["scanner_serial_number"] = dcm_obj.get("DeviceSerialNumber")
@@ -173,6 +223,13 @@ def process_dcm_meta(dcm_objs: list[FileDataset], output_dir: str) -> None:
 
     with open(meta_file, "w") as f:
         json.dump(metadata, f, indent=4)
+
+    return (new_patient_key, original_patient_key)
+
+
+process_dcm_meta.__doc__ = (
+    process_dcm_meta.__doc__.format(RESERVED_CSV=RESERVED_CSV) if process_dcm_meta.__doc__ else None
+)
 
 
 def update_modality(dcm: FileDataset) -> bool:
@@ -217,20 +274,25 @@ def process_dcm(
     input_dir: str | Path,
     image_format: str = "png",
     output_dir: str = "exported_data",
+    mapping: str = "",
+    keep: str = "",
     overwrite: bool = False,
     verbose: bool = False,
-) -> None:
+) -> tuple[str, str]:
     """Process DICOM files from the input directory and save images in the specified format.
 
     Args:
         input_dir (str|Path): Path to the directory containing DICOM files.
         output_dir (str): Path to the directory where images will be saved. Defaults to "__input_dir__/exported_data".
                           Use full path if wanting to save to a specific folder.
+        mapping (str): Optional path to the CSV file containing patient ID to study ID mapping.
+                       If not provided and patient_id is not anonymised, a '{RESERVED_CSV}' file will be generated.
         image_format (str): The format in which to save the images. Defaults to "png".
         overwrite (bool): Whether to overwrite existing files in the output directory. Defaults to False.
         verbose (bool, optional): Whether to print out progress information during processing. Defaults to True.
+        keep (str): String containing the letters indicating which fields to keep (p, n, d, D, g).
     """
-    output_dir = set_output_dir(input_dir, output_dir)
+    # output_dir = set_output_dir(input_dir, output_dir)
 
     if overwrite:
         shutil.rmtree(output_dir, ignore_errors=True)
@@ -271,25 +333,47 @@ def process_dcm(
 
         dcms.append(dcm)
 
-    process_dcm_meta(dcms, output_dir)
+    return process_dcm_meta(dcm_objs=dcms, output_dir=output_dir, mapping=mapping, keep=keep)
 
 
-def find_dcm_subfolders(root_folder: str) -> list[str]:
-    """Finds all unique subfolders within the root folder that contain at least one DCM file.
+process_dcm.__doc__ = process_dcm.__doc__.format(RESERVED_CSV=RESERVED_CSV) if process_dcm.__doc__ else None
+
+
+def find_dicom_folders_with_base(root_folder: str) -> tuple[int, str, list[str]]:
+    """Finds all unique subfolders within the root folder that contain at least one DICOM (.dcm) file.
+
+    It also returns the common base directory and the number of found subfolders.
 
     Args:
-        root_folder: The path to the root folder to search.
+        root_folder (str): The path to the root folder to search for subfolders containing DICOM files.
 
     Returns:
-        A naturally sorted list of unique full paths of subfolders containing DCM files.
+        tuple[int, str, list[str]]: A tuple containing:
+            - int: The number of subfolders containing at least one DICOM file.
+            - str: The base directory common to all found subfolders, or an empty string if none found.
+            - list[str]: A naturally sorted list of unique full paths of subfolders containing DICOM files.
+
+    Example:
+        find_dicom_folders_with_base("/data/patient")
     """
     unique_subfolders = set()
-
     for dirpath, _, filenames in os.walk(root_folder):
         if any(filename.lower().endswith(".dcm") for filename in filenames):
-            unique_subfolders.add(dirpath)  # Store full path
+            unique_subfolders.add(dirpath)  # Add the full path of subfolders containing DCM files
 
-    return natsorted(list(unique_subfolders))
+    folders = list(unique_subfolders)
+    len_ins = len(folders)
+
+    if len_ins == 0:
+        return 0, "", []
+
+    if len_ins == 1:
+        base_dir = folders[0].rstrip("/")  # Strip trailing slash if present
+        base_dir = os.path.dirname(base_dir)
+    else:
+        base_dir = os.path.commonpath(folders)  # Get the common base directory
+
+    return len_ins, base_dir, natsorted(folders)
 
 
 def get_md5(file_path: Path | str | list[str]) -> str:
@@ -305,3 +389,122 @@ def get_md5(file_path: Path | str | list[str]) -> str:
                 while chunk := f.read(4096):
                     md5_hash.update(chunk)
     return md5_hash.hexdigest()
+
+
+def get_hash(value: str) -> str:
+    """Get a 10 digit hash based on the input string."""
+    hex_dig = hashlib.sha256(str(value).encode()).hexdigest()
+    return f"{int(hex_dig[:8], 16):010}"
+
+
+def get_versioned_filename(base_filename: str, version: int) -> str:
+    """Generates a file name with a version suffix.
+
+    Args:
+        base_filename (str): The base name of the file.
+        version (int): The version number to append.
+
+    Returns:
+        str: The generated file name with a version suffix.
+    """
+    base, ext = os.path.splitext(base_filename)
+    return f"{base}_{version}{ext}"
+
+
+def save_to_temp_file(data: list[list[str]]) -> str:
+    """Saves data to a temporary CSV file.
+
+    Args:
+        data (list[list[str]]): The data to be written to the temporary file.
+
+    Returns:
+        str: The path of the temporary file.
+    """
+    temp_file = tempfile.NamedTemporaryFile(delete=False, mode="w", newline="", suffix=".csv")
+    temp_file.close()  # Close the NamedTemporaryFile to be reused by write_to_csv
+    write_to_csv(temp_file.name, data, header=["study_id", "patient_id"])
+    return temp_file.name
+
+
+def files_are_identical(file1: str, file2: str) -> bool:
+    """Checks if two files are identical.
+
+    Args:
+        file1 (str): The path to the first file.
+        file2 (str): The path to the second file.
+
+    Returns:
+        bool: True if the files are identical, False otherwise.
+    """
+    return filecmp.cmp(file1, file2, shallow=False)
+
+
+def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, verbose: bool = False) -> None:
+    """Processes unique sorted results and saves them to the reserved CSV file.
+
+    If the content is identical to the existing file, it leaves the existing file unchanged.
+    If the content differs, it renames the existing file with a suffix and saves the new content as the reserved CSV.
+
+    Args:
+        unique_sorted_results (list): The data to be written to the CSV file. Each sublist
+                                      represents a row with 'study_id' and 'patient_id'.
+        reserved_csv (str): The path to the reserved CSV file.
+        verbose (bool, optional): Verbosity. Defaults to False.
+    """
+    temp_filename = save_to_temp_file(unique_sorted_results)
+
+    if os.path.exists(reserved_csv):
+        if files_are_identical(temp_filename, reserved_csv):
+            os.remove(temp_filename)
+            if verbose:
+                print(f"No changes detected. {reserved_csv} remains unchanged.")
+        else:
+            version = 1
+            new_version_filename = get_versioned_filename(reserved_csv, version)
+            while os.path.exists(new_version_filename):
+                version += 1
+                new_version_filename = get_versioned_filename(reserved_csv, version)
+
+            shutil.move(reserved_csv, new_version_filename)
+            if verbose:
+                print(f"Old {reserved_csv} renamed to {new_version_filename}")
+            shutil.move(temp_filename, reserved_csv)
+            if verbose:
+                print(f"New generated mapping saved to {reserved_csv}")
+    else:
+        shutil.move(temp_filename, reserved_csv)
+        if verbose:
+            print(f"Generated mapping saved to {reserved_csv}")
+
+
+def read_csv(file_path: str) -> list[list[str]]:
+    """Reads a CSV file and returns its contents as a list of rows.
+
+    Each row is represented as a list of strings.
+
+    Args:
+        file_path (str): The path to the CSV file to be read.
+
+    Returns:
+        list[list[str]]: A list of rows, where each row is a list of strings representing the CSV data.
+    """
+    with open(file_path) as file:
+        reader = csv.reader(file)
+        return list(reader)
+
+
+def write_to_csv(file_path: str | Path, data: list[list[str]], header: list[str] = []) -> None:
+    """Writes data to a CSV file at the specified file path.
+
+    Args:
+        file_path (str|Path): The path to the CSV file.
+        data (list[list[str]]): The data to write to the CSV file. Each sublist represents a row.
+        header (list[str], optional): An optional list representing the CSV header.
+                                      Defaults to None.
+    """
+    file_path = Path(file_path)
+    with file_path.open(mode="w", newline="") as file:
+        writer = csv.writer(file)
+        if header:
+            writer.writerow(header)
+        writer.writerows(data)

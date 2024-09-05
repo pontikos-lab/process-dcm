@@ -1,5 +1,7 @@
+import os
 import tempfile
 from collections import defaultdict
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -7,6 +9,7 @@ from pydicom.dataset import Dataset, FileDataset
 from typer.testing import CliRunner
 
 from process_dcm import __version__ as version
+from process_dcm.const import ImageModality
 
 
 def pytest_report_header():
@@ -98,7 +101,56 @@ def dicom_with_photo_locations():
 def dicom_base():
     """Base fixture for creating a mocked DICOM FileDataset."""
     dataset = FileDataset("test.dcm", {}, file_meta=defaultdict(str), preamble=b"\0" * 128)
-    dataset.Modality = ""
+    dataset.AccessionNumber = 0
+    dataset.Modality = ImageModality.OCT
+    dataset.PatientBirthDate = "19020202"
     dataset.Manufacturer = ""
     dataset.SeriesDescription = ""
+    dataset.PatientID = "bbff7a25-d32c-4192-9330-0bb01d49f746"
     return dataset
+
+
+@pytest.fixture
+def csv_data():
+    return [
+        ["study_id_1", "patient_id_1"],
+        ["study_id_2", "patient_id_2"],
+    ]
+
+
+@pytest.fixture
+def unique_sorted_results():
+    return [
+        ["study_id_3", "patient_id_3"],
+        ["study_id_4", "patient_id_4"],
+    ]
+
+
+@pytest.fixture
+def janitor() -> Generator[list[str], None, None]:
+    to_delete: list[str] = []
+    yield to_delete
+    del_file_paths(to_delete)
+
+
+def del_file_paths(file_paths: list[str]) -> None:
+    """Deletes all files and folders in the list of file paths.
+
+    Args:
+        file_paths (List[str]): A list of file paths to delete.
+
+    Returns:
+        None
+    """
+    for path in file_paths:
+        if not os.path.exists(path):
+            continue
+        if os.path.isfile(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            for root, dirs, files in os.walk(path, topdown=False):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
+            os.rmdir(path)

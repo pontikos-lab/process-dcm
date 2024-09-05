@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -6,7 +7,17 @@ from unittest.mock import patch
 import pytest
 
 from process_dcm.const import ImageModality
-from process_dcm.utils import do_date, find_dcm_subfolders, meta_images, process_dcm, set_output_dir, update_modality
+from process_dcm.utils import (
+    do_date,
+    meta_images,
+    process_and_save_csv,
+    process_dcm,
+    process_dcm_meta,
+    read_csv,
+    set_output_dir,
+    update_modality,
+    write_to_csv,
+)
 
 
 def test_meta_images_optopol(dicom_opotopol, mocker):
@@ -102,17 +113,6 @@ def test_do_date() -> None:
     assert do_date("InvalidDate", "%Y%m%d", "%Y-%m-%d") == ""
 
 
-def test_find_dcm_subfolders() -> None:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        dcm_folder1 = os.path.join(tmpdir, "folder1")
-        dcm_folder2 = os.path.join(tmpdir, "folder2")
-        os.makedirs(dcm_folder1)
-        os.makedirs(dcm_folder2)
-        open(os.path.join(dcm_folder1, "image.dcm"), "w").close()
-        subfolders = find_dcm_subfolders(tmpdir)
-        assert len(subfolders) == 1
-
-
 def test_update_modality_opt(dicom_base):
     """Test updating modality when the modality is OPT."""
     dicom_base.Modality = "OPT"
@@ -171,3 +171,93 @@ def test_update_modality_op_various_descriptions(dicom_base, description, expect
     dicom_base.SeriesDescription = description
     assert update_modality(dicom_base) is True
     assert dicom_base.Modality == expected_modality
+
+
+def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base):
+    # Call the function with "D" in keep
+    with tempfile.TemporaryDirectory() as tmpdir:
+        process_dcm_meta([dicom_base], tmpdir, keep="D", mapping="tests/map.csv")
+        rjson = json.load(open(os.path.join(tmpdir, "metadata.json")))
+        assert rjson["patient"]["date_of_birth"] == "1902-01-01"
+        assert rjson["patient"]["patient_key"] == "00123"
+
+
+def test_process_and_save_csv(csv_data, unique_sorted_results):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        reserved_csv = Path(temp_dir) / "reserved.csv"
+
+        # Create initial reserved CSV with initial csv_data
+        write_to_csv(reserved_csv, csv_data, header=["study_id", "patient_id"])
+
+        # Process and save new CSV data
+        process_and_save_csv(unique_sorted_results, reserved_csv, verbose=True)
+
+        # Check if reserved CSV was updated
+        updated_data = read_csv(reserved_csv)
+        expected_data = [["study_id", "patient_id"], *unique_sorted_results]
+        assert updated_data == expected_data, f"Expected {expected_data}, but got {updated_data}"
+
+        # Check if backup was created
+        backup_file = Path(temp_dir) / "reserved_1.csv"
+        assert backup_file.exists(), f"Expected backup file {backup_file} to exist"
+
+        backup_data = read_csv(backup_file)
+        expected_backup_data = [["study_id", "patient_id"], *csv_data]
+        assert backup_data == expected_backup_data, f"Expected {expected_backup_data}, but got {backup_data}"
+
+
+def test_process_and_save_csv_no_existing_file(unique_sorted_results):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        reserved_csv = Path(temp_dir) / "reserved.csv"
+
+        # Process and save new CSV data with no existing reserved CSV
+        process_and_save_csv(unique_sorted_results, reserved_csv, verbose=True)
+
+        # Check if reserved CSV was created and contains the expected data
+        created_data = read_csv(reserved_csv)
+        expected_data = [["study_id", "patient_id"], *unique_sorted_results]
+        assert created_data == expected_data, f"Expected {expected_data}, but got {created_data}"
+
+
+def test_process_and_save_csv_with_existing_file(csv_data, unique_sorted_results):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        reserved_csv = Path(temp_dir) / "reserved.csv"
+
+        # Create initial reserved CSV with initial csv_data
+        write_to_csv(reserved_csv, csv_data, header=["study_id", "patient_id"])
+
+        # Process and save new CSV data
+        process_and_save_csv(unique_sorted_results, reserved_csv, verbose=True)
+
+        # Check if reserved CSV was updated
+        updated_data = read_csv(reserved_csv)
+        expected_data = [["study_id", "patient_id"], *unique_sorted_results]
+        assert updated_data == expected_data, f"Expected {expected_data}, but got {updated_data}"
+
+        # Check if backup was created
+        backup_file = Path(temp_dir) / "reserved_1.csv"
+        assert backup_file.exists(), f"Expected backup file {backup_file} to exist"
+
+        backup_data = read_csv(backup_file)
+        expected_backup_data = [["study_id", "patient_id"], *csv_data]
+        assert backup_data == expected_backup_data, f"Expected {expected_backup_data}, but got {backup_data}"
+
+
+def test_process_and_save_csv_no_changes(csv_data):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        reserved_csv = Path(temp_dir) / "reserved.csv"
+
+        # Create reserved CSV with initial csv_data
+        write_to_csv(reserved_csv, csv_data, header=["study_id", "patient_id"])
+
+        # Process and save the same CSV data
+        process_and_save_csv(csv_data, reserved_csv, verbose=True)
+
+        # Check if reserved CSV remains unchanged
+        unchanged_data = read_csv(reserved_csv)
+        expected_data = [["study_id", "patient_id"], *csv_data]
+        assert unchanged_data == expected_data, f"Expected {expected_data}, but got {unchanged_data}"
+
+        # Check that no backup was created
+        backup_file = Path(temp_dir) / "reserved_1.csv"
+        assert not backup_file.exists(), f"Did not expect backup file {backup_file} to exist"
