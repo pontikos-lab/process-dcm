@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "process-dcm"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python library and app to extract images from DCM in private-eye format"
 authors = ["Alan Silva <3899850+alanwilter@users.noreply.github.com>"]
 readme = "README.md"
@@ -47,7 +47,7 @@ pytest-env = "1.1.4"
 pytest-xdist = "3.6.1"
 ruff = "0.6.4"
 typed-argument-parser = "1.10.1"
-types-pillow = "10.2.0.20240822"
+types-pillow = "10.2.1.20240822"
 types-tqdm = "4.66.0.20240417"
 wheel = "0.44.0"
 pytest-mock = "^3.14.0"

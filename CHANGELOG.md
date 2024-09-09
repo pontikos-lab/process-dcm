@@ -1,3 +1,10 @@
+## v0.2.1 (2024-09-09)
+
+### Fix
+
+- Fix the abort case and test
+- Update to pydicom 3.0 and fixed some typos
+
 ## v0.2.0 (2024-09-05)
 
 ### Feat
