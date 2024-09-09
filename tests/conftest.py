@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
@@ -15,6 +16,11 @@ from process_dcm.const import ImageModality
 
 def pytest_report_header():
     return f">>>\tVersion: {version}\n"
+
+
+def remove_ansi_codes(text):
+    ansi_escape = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
+    return ansi_escape.sub("", text)
 
 
 @pytest.fixture(scope="module")

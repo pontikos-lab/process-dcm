@@ -8,6 +8,7 @@ from process_dcm import __version__
 from process_dcm.const import RESERVED_CSV
 from process_dcm.main import app, process_task
 from process_dcm.utils import get_md5
+from tests.conftest import remove_ansi_codes
 
 
 def test_main_defaults(runner):
@@ -110,8 +111,12 @@ def test_main_abort(runner):
     # Expect the typer.Abort exception to be raised
     args = ["tests/example-dcms", "--verbose", "--keep", "p", "--mapping", RESERVED_CSV, "-v"]
     result = runner.invoke(app, args)
+
+    # Strip ANSI codes from the output
+    output = remove_ansi_codes(result.stdout)
+
     assert result.exit_code == 1
-    assert result.stdout == "Can't use reserved CSV file name: patient_2_study_id.csv\nAborted.\n"
+    assert output == "Can't use reserved CSV file name: patient_2_study_id.csv\nAborted.\n"
 
 
 # skip this test for CI
