@@ -1,7 +1,7 @@
 import json
 import os
-import tempfile
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import pytest
@@ -9,6 +9,7 @@ import pytest
 from process_dcm.const import ImageModality
 from process_dcm.utils import (
     do_date,
+    get_versioned_filename,
     meta_images,
     process_and_save_csv,
     process_dcm,
@@ -175,7 +176,7 @@ def test_update_modality_op_various_descriptions(dicom_base, description, expect
 
 def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base):
     # Call the function with "D" in keep
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         process_dcm_meta([dicom_base], tmpdir, keep="D", mapping="tests/map.csv")
         rjson = json.load(open(os.path.join(tmpdir, "metadata.json")))
         assert rjson["patient"]["date_of_birth"] == "1902-01-01"
@@ -183,7 +184,7 @@ def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base):
 
 
 def test_process_and_save_csv(csv_data, unique_sorted_results):
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
         # Create initial reserved CSV with initial csv_data
@@ -207,7 +208,7 @@ def test_process_and_save_csv(csv_data, unique_sorted_results):
 
 
 def test_process_and_save_csv_no_existing_file(unique_sorted_results):
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
         # Process and save new CSV data with no existing reserved CSV
@@ -220,11 +221,13 @@ def test_process_and_save_csv_no_existing_file(unique_sorted_results):
 
 
 def test_process_and_save_csv_with_existing_file(csv_data, unique_sorted_results):
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
+        reserved_csv1 = get_versioned_filename(reserved_csv, 1)
 
         # Create initial reserved CSV with initial csv_data
         write_to_csv(reserved_csv, csv_data, header=["study_id", "patient_id"])
+        write_to_csv(reserved_csv1, csv_data, header=["study_id", "patient_id"])
 
         # Process and save new CSV data
         process_and_save_csv(unique_sorted_results, reserved_csv, verbose=True)
@@ -244,7 +247,7 @@ def test_process_and_save_csv_with_existing_file(csv_data, unique_sorted_results
 
 
 def test_process_and_save_csv_no_changes(csv_data):
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
         # Create reserved CSV with initial csv_data

@@ -126,9 +126,6 @@ def meta_images(dcm_obj: FileDataset) -> dict:
     return meta
 
 
-boo = "hello"
-
-
 def process_dcm_meta(
     dcm_objs: list[FileDataset], output_dir: str, mapping: str = "", keep: str = ""
 ) -> tuple[str, str]:

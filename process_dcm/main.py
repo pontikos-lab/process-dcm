@@ -18,7 +18,7 @@ app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 def print_version(value: bool) -> None:
     """Print the version of the app."""
     if value:
-        typer.echo(f"Process DCM Version: {__version__}")
+        typer.secho(f"Process DCM Version: {__version__}", fg="blue")
         raise typer.Exit()
 
 
@@ -82,18 +82,17 @@ def main(
     len_sf, base_dir, subfolders = find_dicom_folders_with_base(input_dir)
     output_dirs = []
 
-    if relative and os.path.isabs(output_dir):
-        relative = False
-        typer.secho(
-            "WARN: '--relative' x 'absolute --output_dir' are incompatible, absolute 'output_dir' takes precedence",
-            fg="yellow",
-        )
-        output_dirs = [x.replace(base_dir, output_dir) for x in subfolders]
-    elif relative and not os.path.isabs(output_dir):
-        output_dirs = [os.path.join(x, output_dir) for x in subfolders]
-    elif not relative and not os.path.isabs(output_dir):
+    if os.path.isabs(output_dir):
+        if relative:
+            typer.secho(
+                "WARN: '--relative' x 'absolute --output_dir' are incompatible, absolute 'output_dir' takes precedence",
+                fg="yellow",
+            )
+            relative = False
         output_dir = os.path.abspath(output_dir)
         output_dirs = [x.replace(base_dir, output_dir) for x in subfolders]
+    elif relative:
+        output_dirs = [os.path.join(x, output_dir) for x in subfolders]
 
     tasks = list(zip(subfolders, output_dirs))
 

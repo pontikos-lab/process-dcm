@@ -1,11 +1,12 @@
+import datetime
 import os
 import tempfile
-from collections import defaultdict
 from collections.abc import Generator
 from pathlib import Path
 
+import pydicom
 import pytest
-from pydicom.dataset import Dataset, FileDataset
+from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
 from typer.testing import CliRunner
 
 from process_dcm import __version__ as version
@@ -35,7 +36,19 @@ def input_dir():
 @pytest.fixture
 def dicom_opotopol():
     """Fixture to create a mocked DICOM FileDataset for OPTOPOL."""
-    dataset = FileDataset("tests/example-dcms/bscans.dcm", {}, file_meta=defaultdict(str), preamble=b"\0" * 128)
+    # Create a FileMetaDataset instead of a defaultdict
+    file_meta = FileMetaDataset()
+    file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  # or other appropriate UID
+
+    # Create the FileDataset object
+    dataset = FileDataset(
+        "tests/example-dcms/bscans.dcm",
+        {},
+        file_meta=file_meta,
+        preamble=b"\0" * 128,
+        is_implicit_VR=False,
+        is_little_endian=True,
+    )
 
     # Mock setting relevant fields to simulate OPTOPOL DICOM
     dataset.Modality = "OPT"
@@ -51,13 +64,30 @@ def dicom_opotopol():
 
     dataset.PerFrameFunctionalGroupsSequence = [functional_group]
 
+    # Optionally set the current date and time for the dataset
+    dt = datetime.datetime.now()
+    dataset.ContentDate = dt.strftime("%Y%m%d")
+    dataset.ContentTime = dt.strftime("%H%M%S.%f")  # fractional seconds
+
     return dataset
 
 
 @pytest.fixture
 def dicom_attribute_error():
     """Fixture to create a mocked DICOM FileDataset for AttributeError simulation."""
-    dataset = FileDataset("tests/example-dcms/bscans.dcm", {}, file_meta=defaultdict(str), preamble=b"\0" * 128)
+    # Create a FileMetaDataset instead of a defaultdict
+    file_meta = FileMetaDataset()
+    file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  # or appropriate UID
+
+    # Create the FileDataset object
+    dataset = FileDataset(
+        "tests/example-dcms/bscans.dcm",
+        {},
+        file_meta=file_meta,
+        preamble=b"\0" * 128,
+        is_implicit_VR=False,
+        is_little_endian=True,
+    )
 
     # Mock setting relevant fields to simulate a DICOM file
     dataset.Modality = "OPT"
@@ -67,10 +97,16 @@ def dicom_attribute_error():
     dataset.NumberOfFrames = 5
     dataset.AccessionNumber = 0
 
+    # Add the PerFrameFunctionalGroupsSequence
     functional_group = Dataset()
     functional_group.OphthalmicFrameLocationSequence = []
 
     dataset.PerFrameFunctionalGroupsSequence = [functional_group]
+
+    # Optionally set the current date and time for the dataset
+    dt = datetime.datetime.now()
+    dataset.ContentDate = dt.strftime("%Y%m%d")
+    dataset.ContentTime = dt.strftime("%H%M%S.%f")  # fractional seconds
 
     return dataset
 
@@ -78,7 +114,19 @@ def dicom_attribute_error():
 @pytest.fixture
 def dicom_with_photo_locations():
     """Fixture to create a mocked DICOM FileDataset for valid photo locations."""
-    dataset = FileDataset("tests/example-dcms/bscans.dcm", {}, file_meta=defaultdict(str), preamble=b"\0" * 128)
+    # Create a FileMetaDataset instead of a defaultdict
+    file_meta = FileMetaDataset()
+    file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  # or appropriate UID
+
+    # Create the FileDataset object
+    dataset = FileDataset(
+        "tests/example-dcms/bscans.dcm",
+        {},
+        file_meta=file_meta,
+        preamble=b"\0" * 128,
+        is_implicit_VR=False,
+        is_little_endian=True,
+    )
 
     # Mock setting relevant fields to simulate a DICOM file
     dataset.Modality = "OPT"
@@ -92,7 +140,14 @@ def dicom_with_photo_locations():
     frame_location = Dataset()
     frame_location.OphthalmicFrameLocationSequence = [Dataset()]
     frame_location.OphthalmicFrameLocationSequence[0].ReferenceCoordinates = [0.0, 0.0, 512.0, 512.0]
+
+    # Repeat the same PerFrameFunctionalGroupsSequence for each frame
     dataset.PerFrameFunctionalGroupsSequence = [frame_location for _ in range(dataset.NumberOfFrames)]
+
+    # Optionally set the current date and time for the dataset
+    dt = datetime.datetime.now()
+    dataset.ContentDate = dt.strftime("%Y%m%d")
+    dataset.ContentTime = dt.strftime("%H%M%S.%f")  # fractional seconds
 
     return dataset
 
@@ -100,13 +155,23 @@ def dicom_with_photo_locations():
 @pytest.fixture
 def dicom_base():
     """Base fixture for creating a mocked DICOM FileDataset."""
-    dataset = FileDataset("test.dcm", {}, file_meta=defaultdict(str), preamble=b"\0" * 128)
+    # Create a FileMetaDataset instead of a defaultdict
+    file_meta = FileMetaDataset()
+    file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian  # or appropriate UID
+
+    # Create the FileDataset object
+    dataset = FileDataset(
+        "test.dcm", {}, file_meta=file_meta, preamble=b"\0" * 128, is_implicit_VR=False, is_little_endian=True
+    )
+
+    # Mock setting relevant fields to simulate a basic DICOM file
     dataset.AccessionNumber = 0
     dataset.Modality = ImageModality.OCT
     dataset.PatientBirthDate = "19020202"
     dataset.Manufacturer = ""
     dataset.SeriesDescription = ""
     dataset.PatientID = "bbff7a25-d32c-4192-9330-0bb01d49f746"
+
     return dataset
 
 
