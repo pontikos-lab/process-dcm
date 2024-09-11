@@ -1,3 +1,9 @@
+## v0.2.2 (2024-09-11)
+
+### Fix
+
+- :bug: Fix absolute path for output_dir issue
+
 ## v0.2.1 (2024-09-09)
 
 ### Fix
