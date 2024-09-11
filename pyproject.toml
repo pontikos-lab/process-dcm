@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 opencv-python-headless = "^4.10.0.84"
 typer = "^0.12.5"
 pydicom = "^3.0.0"
