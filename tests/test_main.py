@@ -87,6 +87,17 @@ def test_main(md5, meta, keep, janitor, runner):
         assert get_md5(of) in md5
 
 
+def test_main_dummy(janitor, runner):
+    janitor.append("dummy_dir")
+    args = ["tests/dummy_ex", "-o", "dummy_dir", "-k", "p"]
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0
+    of = sorted(glob("dummy_dir/**/*"))
+    assert len(of) == 2
+    assert get_md5("dummy_dir/dummy_ex/metadata.json") == "1cabdb14492a0e62d80cfc0a3fe304e9"
+    assert get_md5(of) in "b19bbfca59584915295f67e9259880d7"
+
+
 def test_main_mapping(janitor, runner):
     janitor.append("patient_2_study_id.csv")
     with TemporaryDirectory() as tmpdirname:

@@ -1,10 +1,6 @@
 fileignoreconfig:
-  - filename: poetry.lock
-    checksum: cd28f1624109b324f71193134fda3e5911a9a09b0a5eae6c051ad5a5fe8514c4
+  - filename: tests/test_main.py
+    checksum: 32b65cc89ae6fa4a65749ad4ee0caa968f23cbe1b496ba459ff0889c1b623204
   - filename: tests/test_utils.py
-    checksum: ec76f44541d839e53b29168e29923d8c309720e53d7769da4b28eba7c1b7ce37
-  - filename: process_dcm/utils.py
-    checksum: 111741bfb41dd02c6fb8538bdf18baffbcb89c91e7714bc32d4ae0a8b2b607e3
-  - filename: README.md
-    checksum: ba2a6e5e3819c42a17ffb252a63f8841658eff651eab4915da0613f9d87debd5
+    checksum: a90ae4e646379b7626df33707759945bf62df2bd3e504ef82c9d1615d6dbb888
 version: ""
