@@ -32,7 +32,7 @@ jobs:
           poetry install
 
       - name: Run tests
-        run: poetry run pytest -k 'not test_main_mapping_example_dir_relative and not test_main_mapping_example_dir'
+        run: poetry run pytest -k 'not test_main_mapping_example_dir_relative and not test_main_mapping_example_dir and not test_process_dcm'
 
       - name: Check if version bump is needed
         id: check

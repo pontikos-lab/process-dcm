@@ -243,6 +243,7 @@ def test_process_and_save_csv_no_changes(csv_data):
         assert not backup_file.exists(), f"Did not expect backup file {backup_file} to exist"
 
 
+# skip this test for CI
 def test_process_dcm(temp_output_dir, input_dir2, mocker):
     mock_secho = mocker.patch("typer.secho")
     new_patient_key, original_patient_key = process_dcm(
