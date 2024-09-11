@@ -14,6 +14,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import typer
 from natsort import natsorted
 from PIL import Image
 from pydicom.dataset import FileDataset
@@ -120,7 +121,7 @@ def meta_images(dcm_obj: FileDataset) -> dict:
                         {"photo_locations": [{"start": {"x": cc[1], "y": cc[0]}, "end": {"x": cc[3], "y": cc[2]}}]}
                     )
                 else:
-                    print("WARN: empty photo_locations")
+                    typer.secho("WARN: empty photo_locations", fg=typer.colors.RED)
                     meta["contents"].append({"photo_locations": []})
 
     return meta
@@ -129,17 +130,20 @@ def meta_images(dcm_obj: FileDataset) -> dict:
 def process_dcm_meta(
     dcm_objs: list[FileDataset], output_dir: str, mapping: str = "", keep: str = ""
 ) -> tuple[str, str]:
-    """Extract and save metadata from a list of DICOM files to a JSON file.
+    """Extract and save metadata from a list of DICOM files into a JSON file.
 
     Args:
         dcm_objs (list[FileDataset]): A list of FileDataset objects representing the DICOM files.
         output_dir (str): The directory where the metadata JSON file will be saved.
-        mapping (str): Optional path to the CSV file containing patient ID to study ID mapping.
-                       If not provided and patient_id is not anonymised, a '{RESERVED_CSV}' file will be generated.
-        keep (str): String containing the letters indicating which fields to keep (p, n, d, D, g).
+        mapping (str, optional): Path to the CSV file containing patient ID to study ID mapping.
+                                 If not provided and patient_id is not anonymized,
+                                 a '{RESERVED_CSV}' file will be generated.
+        keep (str, optional): String containing the letters indicating which fields to keep.
+                              Options: 'p' for patient key, 'n' for patient names, 'd' for precise date of birth,
+                              'D' for anonymized date of birth (year only), and 'g' for gender. Defaults to "".
 
     Returns:
-        None
+        tuple[str, str]: A tuple containing the new patient key and the original patient key.
     """
     meta_file = os.path.join(output_dir, "metadata.json")
     metadata: dict = defaultdict(dict)
@@ -274,28 +278,41 @@ def process_dcm(
     mapping: str = "",
     keep: str = "",
     overwrite: bool = False,
-    verbose: bool = False,
+    quiet: bool = False,
 ) -> tuple[str, str]:
     """Process DICOM files from the input directory and save images in the specified format.
 
     Args:
-        input_dir (str|Path): Path to the directory containing DICOM files.
-        output_dir (str): Path to the directory where images will be saved. Defaults to "__input_dir__/exported_data".
-                          Use full path if wanting to save to a specific folder.
-        mapping (str): Optional path to the CSV file containing patient ID to study ID mapping.
-                       If not provided and patient_id is not anonymised, a '{RESERVED_CSV}' file will be generated.
-        image_format (str): The format in which to save the images. Defaults to "png".
-        overwrite (bool): Whether to overwrite existing files in the output directory. Defaults to False.
-        verbose (bool, optional): Whether to print out progress information during processing. Defaults to True.
-        keep (str): String containing the letters indicating which fields to keep (p, n, d, D, g).
-    """
-    # output_dir = set_output_dir(input_dir, output_dir)
+        input_dir (str | Path): Path to the directory containing DICOM files.
+        image_format (str, optional): The format in which to save the images. Defaults to "png".
+        output_dir (str, optional): Path to the directory where images will be saved. Defaults to "exported_data".
+        mapping (str, optional): Path to the CSV file containing patient ID to study ID mapping.
+                                 If not provided and patient_id is not anonymized,
+                                 a '{RESERVED_CSV}' file will be generated.
+        keep (str, optional): String containing the letters indicating which fields to keep.
+                              Options: 'p' for patient key, 'n' for patient names, 'd' for precise date of birth,
+                              'D' for anonymized date of birth (year only), and 'g' for gender. Defaults to "".
+        overwrite (bool, optional): Whether to overwrite existing files in the output directory. Defaults to False.
+        quiet (bool, optional): Silence verbosity. Defaults to False.
 
+    Returns:
+        tuple[str, str]: A tuple containing the new patient key and the original patient key.
+    """
     if overwrite:
         shutil.rmtree(output_dir, ignore_errors=True)
     else:
-        if os.path.exists(output_dir) and verbose:
-            print(f"Output directory '{output_dir}' already exists.")
+        if os.path.exists(output_dir):
+            # Check if output_dir contains metadata.json and files with the specified image_format
+            has_metadata = os.path.exists(os.path.join(output_dir, "metadata.json"))
+            has_images = any(f.endswith(image_format) for f in os.listdir(output_dir))
+
+            if has_metadata and has_images:
+                if not quiet:
+                    typer.secho(
+                        f"Output directory '{output_dir}' already exists with metadata and images. Skipping...",
+                        fg="yellow",
+                    )
+                return "", ""
 
     # Load both DICOM files in the input directory
     dcm_objs = [dcmread(os.path.join(input_dir, f)) for f in os.listdir(input_dir) if f.endswith(".dcm")]
@@ -436,7 +453,7 @@ def files_are_identical(file1: str, file2: str) -> bool:
     return filecmp.cmp(file1, file2, shallow=False)
 
 
-def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, verbose: bool = False) -> None:
+def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, quiet: bool = False) -> None:
     """Processes unique sorted results and saves them to the reserved CSV file.
 
     If the content is identical to the existing file, it leaves the existing file unchanged.
@@ -446,15 +463,15 @@ def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, verbose
         unique_sorted_results (list): The data to be written to the CSV file. Each sublist
                                       represents a row with 'study_id' and 'patient_id'.
         reserved_csv (str): The path to the reserved CSV file.
-        verbose (bool, optional): Verbosity. Defaults to False.
+        quiet (bool, optional): Silene verbosity. Defaults to False.
     """
     temp_filename = save_to_temp_file(unique_sorted_results)
 
     if os.path.exists(reserved_csv):
         if files_are_identical(temp_filename, reserved_csv):
             os.remove(temp_filename)
-            if verbose:
-                print(f"No changes detected. {reserved_csv} remains unchanged.")
+            if not quiet:
+                typer.secho(f"No changes detected. '{reserved_csv}' remains unchanged.", fg="yellow")
         else:
             version = 1
             new_version_filename = get_versioned_filename(reserved_csv, version)
@@ -463,15 +480,15 @@ def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, verbose
                 new_version_filename = get_versioned_filename(reserved_csv, version)
 
             shutil.move(reserved_csv, new_version_filename)
-            if verbose:
-                print(f"Old {reserved_csv} renamed to {new_version_filename}")
+            if not quiet:
+                typer.secho(f"Old '{reserved_csv}' renamed to '{new_version_filename}'", fg="yellow")
             shutil.move(temp_filename, reserved_csv)
-            if verbose:
-                print(f"New generated mapping saved to {reserved_csv}")
+            if not quiet:
+                typer.secho(f"New generated mapping saved to '{reserved_csv}'", fg="yellow")
     else:
         shutil.move(temp_filename, reserved_csv)
-        if verbose:
-            print(f"Generated mapping saved to {reserved_csv}")
+        if not quiet:
+            typer.secho(f"Generated mapping saved to '{reserved_csv}'", fg="blue")
 
 
 def read_csv(file_path: str) -> list[list[str]]:

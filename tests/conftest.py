@@ -39,6 +39,11 @@ def input_dir():
     return Path("tests/example-dcms").resolve()
 
 
+@pytest.fixture(scope="module")
+def input_dir2():
+    return Path("tests/example_dir/010-0001/20180724_L").resolve()
+
+
 @pytest.fixture
 def dicom_opotopol():
     """Fixture to create a mocked DICOM FileDataset for OPTOPOL."""

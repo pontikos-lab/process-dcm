@@ -1,14 +1,10 @@
 fileignoreconfig:
-  - filename: tests/test_main.py
-    checksum: efa949f7b639498667939891d29938f01047b7b9a70ffd61a74d47cd127ddbf8
-  - filename: process_dcm/main.py
-    checksum: 3b69ef0a904c0b9e04574fc70e4a35bcf0ed23a75ef9ff99ce6bf80cbaa43551
-  - filename: tests/test_utils.py
-    checksum: 00912e74713f45921e593b5f1f98e23b324ab13bd5c9d44edb24c49a08f325b8
-  - filename: process_dcm/utils.py
-    checksum: fdb35056dbd109dbbac6fd5d3668fbff90ace8f46aa37b787eaa2572c02d0aaf
-  - filename: README.md
-    checksum: 4a9bf4e1400f36c5646be2b85eee66d1681d12e67bd9dce431206d21a7c85f64
   - filename: poetry.lock
-    checksum: 868367c1e6faa49cc06eaf099af0f27c7bc2ad9eab2be84b26ae7b41a953bcf7
+    checksum: 9fdec2e082b5ebef4e29ab71fe13e99a91671f471a05a265e6ba86d46eba332b
+  - filename: tests/test_utils.py
+    checksum: ec76f44541d839e53b29168e29923d8c309720e53d7769da4b28eba7c1b7ce37
+  - filename: process_dcm/utils.py
+    checksum: 111741bfb41dd02c6fb8538bdf18baffbcb89c91e7714bc32d4ae0a8b2b607e3
+  - filename: README.md
+    checksum: ba2a6e5e3819c42a17ffb252a63f8841658eff651eab4915da0613f9d87debd5
 version: ""

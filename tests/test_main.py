@@ -23,12 +23,14 @@ def test_main_version(runner):
     assert f"Process DCM Version: {__version__}" in result.output
 
 
-def test_main_with_options(runner):
-    input_dir = "path/to/dcm"
-    image_format = "jpg"
-    output_dir = "/tmp/exported_data"
-    n_jobs = 2
-
+@pytest.mark.parametrize(
+    "input_dir, image_format, output_dir, n_jobs, additional_args, expected_output",
+    [
+        ("path/to/dcm", "jpg", "/tmp/exported_data", 2, [], "Processed"),
+        ("path/to/dcm", "jpg", "/tmp/exported_data", 2, ["--quiet"], ""),
+    ],
+)
+def test_main_with_options(input_dir, image_format, output_dir, n_jobs, additional_args, expected_output, runner):
     args = [
         input_dir,
         "--image_format",
@@ -38,17 +40,20 @@ def test_main_with_options(runner):
         "--n_jobs",
         str(n_jobs),
         "--overwrite",
-        "--verbose",
+        *additional_args,
     ]
+
     result = runner.invoke(app, args)
+
     assert result.exit_code == 0
-    assert "Processed" in result.output
+    assert expected_output in result.output
 
 
 def test_cli_without_args(runner):
     result = runner.invoke(app)
     assert result.exit_code == 2
-    assert "Missing argument 'INPUT_DIR'" in result.stdout
+    output = remove_ansi_codes(result.stdout)
+    assert "Missing argument 'INPUT_DIR'" in output
 
 
 @pytest.mark.parametrize(
@@ -71,7 +76,6 @@ def test_main(md5, meta, keep, janitor, runner):
             "--n_jobs",
             "1",
             "--overwrite",
-            "--verbose",
             "--keep",
             keep,
         ]
@@ -97,10 +101,11 @@ def test_main_mapping(janitor, runner):
             "p",
             "--mapping",
             "tests/map.csv",
-            "-v",
+            "-r",
         ]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
+        assert "WARN: '--relative' x 'absolute --output_dir'" in result.output
         of = sorted(glob(f"{output_dir}/**/*"))
         assert len(of) == 51
         assert get_md5(output_dir / "example-dcms/metadata.json") == "261826ad2e067e9adb7143bb6c053dbc"
@@ -109,7 +114,7 @@ def test_main_mapping(janitor, runner):
 
 def test_main_abort(runner):
     # Expect the typer.Abort exception to be raised
-    args = ["tests/example-dcms", "--verbose", "--keep", "p", "--mapping", RESERVED_CSV, "-v"]
+    args = ["tests/example-dcms", "--keep", "p", "--mapping", RESERVED_CSV]
     result = runner.invoke(app, args)
 
     # Strip ANSI codes from the output
@@ -125,7 +130,7 @@ def test_main_mapping_example_dir(janitor, runner):
     janitor.append("patient_2_study_id_1.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
-        args = ["tests/example_dir", "-v", "-o", str(output_dir), "-j", "2", "-w", "-k", "nDg", "-m", "tests/map.csv"]
+        args = ["tests/example_dir", "-o", str(output_dir), "-j", "2", "-w", "-k", "nDg", "-m", "tests/map.csv"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         of = sorted(glob(f"{output_dir}/**/**/*"))
@@ -139,7 +144,7 @@ def test_main_mapping_example_dir_relative(janitor, runner):
     input_dir = "tests/example_dir"
     janitor.append("patient_2_study_id.csv")
     janitor.append("patient_2_study_id_1.csv")
-    args = ["tests/example_dir", "-v", "-o", "dummy", "-j", "2", "-r", "-k", "nDg", "-m", "tests/map.csv"]
+    args = ["tests/example_dir", "-o", "dummy", "-j", "2", "-r", "-k", "nDg", "-m", "tests/map.csv"]
     result = runner.invoke(app, args)
     assert result.exit_code == 0
     of = sorted(glob(f"{input_dir}/**/**/dummy/*"))

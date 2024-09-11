@@ -5,10 +5,12 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import pytest
+import typer
 
 from process_dcm.const import ImageModality
 from process_dcm.utils import (
     do_date,
+    get_md5,
     get_versioned_filename,
     meta_images,
     process_and_save_csv,
@@ -22,14 +24,14 @@ from process_dcm.utils import (
 
 
 def test_meta_images_optopol(dicom_opotopol, mocker):
-    # Mock the warning print for empty photo locations
-    mock_print = mocker.patch("builtins.print")
+    # Mock the typer.secho call for empty photo locations
+    mock_secho = mocker.patch("typer.secho")
     update_modality(dicom_opotopol)
     meta = meta_images(dicom_opotopol)
 
     assert meta["modality"] == "OCT", "Modality extraction failed"
     assert len(meta["contents"]) == 1  # Should correspond to NumberOfFrames
-    mock_print.assert_called_with("WARN: empty photo_locations")  # Ensure the warning was printed
+    mock_secho.assert_called_with("WARN: empty photo_locations", fg=typer.colors.RED)
 
 
 def test_meta_images_attribute_error(dicom_attribute_error):
@@ -51,31 +53,6 @@ def test_meta_images_with_photo_locations(dicom_with_photo_locations):
     assert all(
         "photo_locations" in content and len(content["photo_locations"]) == 1 for content in meta["contents"]
     ), "Photo locations not found or incomplete in metadata"
-
-
-def test_process_dcm_overwrite_and_verbose(input_dir, temp_output_dir, mocker):
-    # Mock the verbose print function
-    mocker.patch("builtins.print")
-
-    # Test Case 1: Processing DICOM files with overwrite set to False
-    process_dcm(input_dir, output_dir=temp_output_dir, overwrite=False, verbose=True)
-    output_files_initial = list(Path(temp_output_dir).glob("*.png"))
-    assert len(output_files_initial) > 0, "No images were processed initially."
-
-    # Check whether the verbose print was called
-    assert print.called, "Verbose print not called"
-
-    # Test Case 2: Reprocessing DICOM files with overwrite set to True
-    process_dcm(input_dir, output_dir=temp_output_dir, overwrite=True, verbose=True)
-    output_files_after_overwrite = list(Path(temp_output_dir).glob("*.png"))
-    assert len(output_files_after_overwrite) == len(output_files_initial), "Output files mismatch after overwrite."
-
-    # Check whether the verbose print was called again
-    assert print.called, "Verbose print not called on overwrite"
-
-    # Test Case 3: Ensure metadata.json is created
-    metadata_file = Path(temp_output_dir) / "metadata.json"
-    assert metadata_file.exists(), "metadata.json was not created."
 
 
 def test_absolute_path_symlink():
@@ -191,7 +168,7 @@ def test_process_and_save_csv(csv_data, unique_sorted_results):
         write_to_csv(reserved_csv, csv_data, header=["study_id", "patient_id"])
 
         # Process and save new CSV data
-        process_and_save_csv(unique_sorted_results, reserved_csv, verbose=True)
+        process_and_save_csv(unique_sorted_results, reserved_csv)
 
         # Check if reserved CSV was updated
         updated_data = read_csv(reserved_csv)
@@ -212,7 +189,7 @@ def test_process_and_save_csv_no_existing_file(unique_sorted_results):
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
         # Process and save new CSV data with no existing reserved CSV
-        process_and_save_csv(unique_sorted_results, reserved_csv, verbose=True)
+        process_and_save_csv(unique_sorted_results, reserved_csv)
 
         # Check if reserved CSV was created and contains the expected data
         created_data = read_csv(reserved_csv)
@@ -230,7 +207,7 @@ def test_process_and_save_csv_with_existing_file(csv_data, unique_sorted_results
         write_to_csv(reserved_csv1, csv_data, header=["study_id", "patient_id"])
 
         # Process and save new CSV data
-        process_and_save_csv(unique_sorted_results, reserved_csv, verbose=True)
+        process_and_save_csv(unique_sorted_results, reserved_csv)
 
         # Check if reserved CSV was updated
         updated_data = read_csv(reserved_csv)
@@ -254,7 +231,7 @@ def test_process_and_save_csv_no_changes(csv_data):
         write_to_csv(reserved_csv, csv_data, header=["study_id", "patient_id"])
 
         # Process and save the same CSV data
-        process_and_save_csv(csv_data, reserved_csv, verbose=True)
+        process_and_save_csv(csv_data, reserved_csv)
 
         # Check if reserved CSV remains unchanged
         unchanged_data = read_csv(reserved_csv)
@@ -264,3 +241,30 @@ def test_process_and_save_csv_no_changes(csv_data):
         # Check that no backup was created
         backup_file = Path(temp_dir) / "reserved_1.csv"
         assert not backup_file.exists(), f"Did not expect backup file {backup_file} to exist"
+
+
+def test_process_dcm(temp_output_dir, input_dir2, mocker):
+    mock_secho = mocker.patch("typer.secho")
+    new_patient_key, original_patient_key = process_dcm(
+        input_dir=input_dir2, output_dir=temp_output_dir, overwrite=True
+    )
+    output_dir = Path(temp_output_dir)
+    output_files_initial = list(output_dir.glob("*.png"))
+    assert len(output_files_initial) == 130, "No images were processed initially."
+    assert new_patient_key == "2910892726"
+    assert original_patient_key == "010-0001"
+
+    # Run process_dcm function with overwrite=False, should skip processing
+    new_patient_key, original_patient_key = process_dcm(
+        input_dir=input_dir2, output_dir=temp_output_dir, overwrite=False
+    )
+    assert new_patient_key == ""
+    msg = f"Output directory '{temp_output_dir}' already exists with metadata and images. Skipping..."
+    mock_secho.assert_called_with(msg, fg=typer.colors.YELLOW)
+    assert len(list(output_dir.glob("*.png"))) == len(output_files_initial)
+
+
+def test_process_dcm_dummy(temp_output_dir):
+    new_patient_key, original_patient_key = process_dcm(input_dir="tests/", output_dir=temp_output_dir, overwrite=True)
+    assert new_patient_key, original_patient_key == ("2375458543", "123456")
+    assert get_md5(os.path.join(temp_output_dir, "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"

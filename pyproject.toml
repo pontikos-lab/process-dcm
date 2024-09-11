@@ -21,7 +21,6 @@ classifiers = [
 python = "^3.11"
 opencv-python-headless = "^4.10.0.84"
 typer = "^0.12.5"
-tqdm = "^4.66.5"
 pydicom = "^3.0.0"
 natsort = "^8.4.0"
 pillow = "^10.4.0"
@@ -31,14 +30,14 @@ python-gdcm = "^3.0.24.1"
 process-dcm = "process_dcm.main:cli"
 
 [tool.poetry.group.dev.dependencies]
-boto3-stubs = { extras = ["lambda", "s3"], version = "1.35.14" }
+boto3-stubs = { extras = ["lambda", "s3"], version = "1.35.16" }
 ipdb = "0.13.13"
 ipython = "8.27.0"
 jupyterlab = "4.2.5"
 mypy = "1.11.2"
 mypy-boto3-lambda = "1.35.3"
-mypy-boto3-s3 = "1.35.2"
-pandas-stubs = "2.2.2.240807"
+mypy-boto3-s3 = "1.35.16"
+pandas-stubs = "2.2.2.240909"
 pdbpp = "0.10.3"
 pip = "24.2"
 pre-commit = "3.8.0"
@@ -47,8 +46,6 @@ pytest-env = "1.1.4"
 pytest-xdist = "3.6.1"
 ruff = "0.6.4"
 typed-argument-parser = "1.10.1"
-types-pillow = "10.2.1.20240822"
-types-tqdm = "4.66.0.20240417"
 wheel = "0.44.0"
 pytest-mock = "^3.14.0"
 
@@ -56,12 +53,8 @@ pytest-mock = "^3.14.0"
 addopts = "tests --cov=process_dcm/ --cov-report=term-missing:skip-covered --cov-report=xml --dist=loadgroup -n 8 --durations=5"
 
 [tool.coverage.report]
-exclude_lines = [
-    "no cov",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "app()",
-]
+omit = ["__main__.py"]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.ruff]
 target-version = "py311"
@@ -97,7 +90,11 @@ disable_error_code = ["type-arg"]
 [tool.commitizen]
 name = "cz_conventional_commits"
 tag_format = "v$version"
-version_files = ["process_dcm/__init__.py", "pyproject.toml"]
+version_files = [
+    "process_dcm/__init__.py",
+    "pyproject.toml",
+    "process_dcm/main.py",
+]
 version_scheme = "pep440"
 version_provider = "poetry"
 update_changelog_on_bump = true
