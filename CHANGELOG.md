@@ -1,3 +1,9 @@
+## v0.3.0 (2024-09-11)
+
+### Feat
+
+- :sparkles: Make it compatible with python >=3.10
+
 ## v0.2.2 (2024-09-11)
 
 ### Fix
