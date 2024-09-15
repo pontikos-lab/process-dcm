@@ -23,39 +23,36 @@ pip install process-dcm
  Usage: process-dcm [OPTIONS] INPUT_DIR
 
  Process DICOM files in subfolders, extract images and metadata using parallel processing.
- Version: 0.2.1
+ Version: 0.4.0
 
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────╮
-│ *    input_dir      TEXT  Input directory containing subfolders with DICOM files.       │
-│                           [default: None]                                               │
-│                           [required]                                                    │
-╰─────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────╮
-│ --image_format        -f      TEXT     Image format for extracted images (png, jpg,     │
-│                                        webp). Defaults to: png                          │
-│                                        [default: png]                                   │
-│ --output_dir          -o      TEXT     Output directory for extracted images and        │
-│                                        metadata. Defaults to: exported_data             │
-│                                        [default: exported_data]                         │
-│ --relative            -r               Save extracted data in folders relative to       │
-│                                        _input_dir_.                                     │
-│ --n_jobs              -j      INTEGER  Number of parallel jobs. Defaults to: 1          │
-│                                        [default: 1]                                     │
-│ --mapping             -m      TEXT     Path to CSV containing patient_id to study_id    │
-│                                        mapping. If not provided and patient_id is not   │
-│                                        anonymised, a 'patient_2_study_id.csv' file will │
-│                                        be generated                                     │
-│ --keep                -k      TEXT     Keep the specified fields (p: patient_key, n:    │
-│                                        names, d: date_of_birth, D: year-only DOB, g:    │
-│                                        gender)                                          │
-│ --overwrite           -w               Overwrite existing images if found.              │
-│ --quiet               -q               Silence verbosity.                               │
-│ --version             -V               Prints app version.                              │
-│ --install-completion                   Install completion for the current shell.        │
-│ --show-completion                      Show completion for the current shell, to copy   │
-│                                        it or customize the installation.                │
-│ --help                -h               Show this message and exit.                      │
-╰─────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    input_dir      TEXT  Input directory containing subfolders with DICOM files. [default: None]    │
+│                           [required]                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --image_format        -f      TEXT     Image format for extracted images (png, jpg, webp). Defaults  │
+│                                        to: png                                                       │
+│                                        [default: png]                                                │
+│ --output_dir          -o      TEXT     Output directory for extracted images and metadata. Defaults  │
+│                                        to: exported_data                                             │
+│                                        [default: exported_data]                                      │
+│ --group               -g               Re-group DICOM files in a given folder by                     │
+│                                        AcquisitionDateTime.                                          │
+│ --relative            -r               Save extracted data in folders relative to _input_dir_.       │
+│ --n_jobs              -j      INTEGER  Number of parallel jobs. Defaults to: 1 [default: 1]          │
+│ --mapping             -m      TEXT     Path to CSV containing patient_id to study_id mapping. If not │
+│                                        provided and patient_id is not anonymised, a                  │
+│                                        'patient_2_study_id.csv' file will be generated               │
+│ --keep                -k      TEXT     Keep the specified fields (p: patient_key, n: names, d:       │
+│                                        date_of_birth, D: year-only DOB, g: gender)                   │
+│ --overwrite           -w               Overwrite existing images if found.                           │
+│ --quiet               -q               Silence verbosity.                                            │
+│ --version             -V               Prints app version.                                           │
+│ --install-completion                   Install completion for the current shell.                     │
+│ --show-completion                      Show completion for the current shell, to copy it or          │
+│                                        customize the installation.                                   │
+│ --help                -h               Show this message and exit.                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## For Developers
