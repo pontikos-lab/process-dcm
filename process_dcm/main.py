@@ -24,7 +24,7 @@ def print_version(value: bool) -> None:
 
 
 def process_task(
-    task: tuple[str, str], image_format: str, overwrite: bool, quiet: bool, keep: str, mapping: str
+    task: tuple[str, str], image_format: str, overwrite: bool, quiet: bool, keep: str, mapping: str, group: bool
 ) -> tuple[str, str]:
     """Process task."""
     subfolder, out_dir = task
@@ -36,6 +36,7 @@ def process_task(
         quiet=quiet,
         keep=keep,
         mapping=mapping,
+        group=group,
     )
 
 
@@ -50,6 +51,9 @@ def main(
         "-o",
         "--output_dir",
         help="Output directory for extracted images and metadata. Defaults to: exported_data",
+    ),
+    group: bool = typer.Option(
+        False, "-g", "--group", help="Re-group DICOM files in a given folder by AcquisitionDateTime."
     ),
     relative: bool = typer.Option(
         False, "-r", "--relative", help="Save extracted data in folders relative to _input_dir_."
@@ -89,6 +93,7 @@ def main(
         quiet=quiet,
         keep=keep,
         mapping=mapping,
+        group=group,
     )
 
     if mapping == RESERVED_CSV:

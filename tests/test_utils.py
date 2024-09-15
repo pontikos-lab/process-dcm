@@ -271,3 +271,11 @@ def test_process_dcm_dummy(temp_output_dir):
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
     assert get_md5(os.path.join(temp_output_dir, "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"
+
+
+def test_process_dcm_dummy_group(temp_output_dir):
+    new_patient_key, original_patient_key = process_dcm(
+        input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True, group=True
+    )
+    assert new_patient_key, original_patient_key == ("2375458543", "123456")
+    assert get_md5(os.path.join(temp_output_dir, "group_0", "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"

@@ -30,7 +30,7 @@ python-gdcm = "^3.0.24.1"
 process-dcm = "process_dcm.main:cli"
 
 [tool.poetry.group.dev.dependencies]
-boto3-stubs = { extras = ["lambda", "s3"], version = "1.35.16" }
+boto3-stubs = { extras = ["lambda", "s3"], version = "1.35.19" }
 ipdb = "0.13.13"
 ipython = "8.27.0"
 jupyterlab = "4.2.5"
@@ -44,7 +44,7 @@ pre-commit = "3.8.0"
 pytest-cov = "5.0.0"
 pytest-env = "1.1.4"
 pytest-xdist = "3.6.1"
-ruff = "0.6.4"
+ruff = "0.6.5"
 typed-argument-parser = "1.10.1"
 wheel = "0.44.0"
 pytest-mock = "^3.14.0"

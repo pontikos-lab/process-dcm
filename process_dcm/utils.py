@@ -279,6 +279,7 @@ def process_dcm(
     keep: str = "",
     overwrite: bool = False,
     quiet: bool = False,
+    group: bool = False,
 ) -> tuple[str, str]:
     """Process DICOM files from the input directory and save images in the specified format.
 
@@ -294,6 +295,7 @@ def process_dcm(
                               'D' for anonymized date of birth (year only), and 'g' for gender. Defaults to "".
         overwrite (bool, optional): Whether to overwrite existing files in the output directory. Defaults to False.
         quiet (bool, optional): Silence verbosity. Defaults to False.
+        group (bool, optional): Whether to re-group DICOM files by AcquisitionDateTime. Defaults to False.
 
     Returns:
         tuple[str, str]: A tuple containing the new patient key and the original patient key.
@@ -314,7 +316,7 @@ def process_dcm(
                     )
                 return "", ""
 
-    # Load both DICOM files in the input directory
+    # Load DICOM files from input directory
     dcm_objs = [dcmread(os.path.join(input_dir, f)) for f in os.listdir(input_dir) if f.endswith(".dcm")]
     dcm_objs.sort(key=lambda x: x.Modality)
     dcms = []
@@ -325,31 +327,70 @@ def process_dcm(
             continue  # Ignore any other modalities
 
         dcm.AccessionNumber = 0
-        # process images
-        arr = dcm.pixel_array
-        os.makedirs(output_dir, exist_ok=True)
 
         if not dcm.get("NumberOfFrames"):
             dcm.NumberOfFrames = 1
 
-        if dcm.NumberOfFrames == 1:
-            arr = np.expand_dims(arr, axis=0)
-
-        for i in range(dcm.NumberOfFrames):
-            out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
-            if os.path.exists(out_img):
-                dcm.AccessionNumber += 1  # increase group_id
-                out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
-
-            array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
-            image = Image.fromarray(array)
-            image.save(out_img)
-
         dcms.append(dcm)
 
-    return process_dcm_meta(dcm_objs=dcms, output_dir=output_dir, mapping=mapping, keep=keep)
+    if group:
+        # Group DICOM files by AcquisitionDateTime
+        grouped_dcms = defaultdict(list)
+        for dcm in dcms:
+            acquisition_datetime = dcm.get("AcquisitionDateTime", "unknown")
+            grouped_dcms[acquisition_datetime].append(dcm)
+
+        # Sort groups by AcquisitionDateTime
+        sorted_groups = sorted(grouped_dcms.items())
+
+        for gid, (acquisition_datetime, group_dcms) in enumerate(sorted_groups):
+            group_dir = os.path.join(output_dir, f"group_{gid}")
+            os.makedirs(group_dir, exist_ok=True)
+
+            for dcm in group_dcms:
+                # process images
+                arr = dcm.pixel_array
+
+                if dcm.NumberOfFrames == 1:
+                    arr = np.expand_dims(arr, axis=0)
+
+                for i in range(dcm.NumberOfFrames):
+                    out_img = os.path.join(group_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
+                    array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
+                    image = Image.fromarray(array)
+                    image.save
+                    image.save(out_img)
+
+            # Process metadata for the grouped DCMs
+            new, old = process_dcm_meta(dcm_objs=group_dcms, output_dir=group_dir, mapping=mapping, keep=keep)
+
+    else:
+        output_path = os.path.join(output_dir)
+        os.makedirs(output_path, exist_ok=True)
+
+        for dcm in dcms:
+            # process images
+            arr = dcm.pixel_array
+
+            if dcm.NumberOfFrames == 1:
+                arr = np.expand_dims(arr, axis=0)
+
+            for i in range(dcm.NumberOfFrames):
+                out_img = os.path.join(output_path, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
+                if os.path.exists(out_img):
+                    dcm.AccessionNumber += 1  # increase group_id
+                    out_img = os.path.join(output_path, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
+
+                array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
+                image = Image.fromarray(array)
+                image.save(out_img)
+
+        new, old = process_dcm_meta(dcm_objs=dcms, output_dir=output_dir, mapping=mapping, keep=keep)
+
+    return new, old
 
 
+# Ensure that process_dcm_meta docstring includes RESERVED_CSV
 process_dcm.__doc__ = process_dcm.__doc__.format(RESERVED_CSV=RESERVED_CSV) if process_dcm.__doc__ else None
 
 

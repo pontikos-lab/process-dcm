@@ -66,6 +66,8 @@ def test_cli_without_args(runner):
 )
 def test_main(md5, meta, keep, janitor, runner):
     janitor.append("patient_2_study_id.csv")
+    janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     # Create a temporary directory using the tempfile module
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
@@ -100,6 +102,8 @@ def test_main_dummy(janitor, runner):
 
 def test_main_mapping(janitor, runner):
     janitor.append("patient_2_study_id.csv")
+    janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
         args = [
@@ -139,6 +143,7 @@ def test_main_abort(runner):
 def test_main_mapping_example_dir(janitor, runner):
     janitor.append("patient_2_study_id.csv")
     janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
         args = ["tests/example_dir", "-o", str(output_dir), "-j", "2", "-w", "-k", "nDg", "-m", "tests/map.csv"]
@@ -155,6 +160,7 @@ def test_main_mapping_example_dir_relative(janitor, runner):
     input_dir = "tests/example_dir"
     janitor.append("patient_2_study_id.csv")
     janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     args = ["tests/example_dir", "-o", "dummy", "-j", "2", "-r", "-k", "nDg", "-m", "tests/map.csv"]
     result = runner.invoke(app, args)
     assert result.exit_code == 0
@@ -177,5 +183,6 @@ def test_process_task():
         verbose = False
         keep = ""
         mapping = ""
-        result = process_task(task_data, image_format, overwrite, verbose, keep, mapping)
+        group = False
+        result = process_task(task_data, image_format, overwrite, verbose, keep, mapping, group)
         assert result == ("0780320450", "bbff7a25-d32c-4192-9330-0bb01d49f746")
