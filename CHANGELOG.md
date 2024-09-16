@@ -1,3 +1,13 @@
+## v0.4.0 (2024-09-16)
+
+### Feat
+
+- :sparkles: Option to re-group DCM results by AcquisitionDateTime
+
+### Fix
+
+- :bug: Fix issue with anonymised folder output
+
 ## v0.3.0 (2024-09-11)
 
 ### Feat

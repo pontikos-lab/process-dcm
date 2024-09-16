@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "process-dcm"
-version = "0.3.0"
+version = "0.4.0"
 description = "Python library and app to extract images from DCM in private-eye format"
 authors = ["Alan Silva <3899850+alanwilter@users.noreply.github.com>"]
 readme = "README.md"
