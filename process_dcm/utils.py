@@ -9,6 +9,7 @@ import shutil
 import tempfile
 import warnings
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -279,6 +280,7 @@ def process_dcm(
     keep: str = "",
     overwrite: bool = False,
     quiet: bool = False,
+    group: bool = False,
 ) -> tuple[str, str]:
     """Process DICOM files from the input directory and save images in the specified format.
 
@@ -294,12 +296,34 @@ def process_dcm(
                               'D' for anonymized date of birth (year only), and 'g' for gender. Defaults to "".
         overwrite (bool, optional): Whether to overwrite existing files in the output directory. Defaults to False.
         quiet (bool, optional): Silence verbosity. Defaults to False.
+        group (bool, optional): Whether to re-group DICOM files by AcquisitionDateTime. Defaults to False.
 
     Returns:
         tuple[str, str]: A tuple containing the new patient key and the original patient key.
     """
+    # Load DICOM files from input directory
+    dcm_objs = [dcmread(os.path.join(input_dir, f)) for f in os.listdir(input_dir) if f.endswith(".dcm")]
+    dcm_objs.sort(key=lambda x: x.Modality)
+    patient_id = dcm_objs[0].PatientID
+
+    keep_patient_key = "p" in keep
+    org_output_dir = output_dir
+
+    # Read the mapping file if provided
+    patient_to_study = {}
+    hash_pat_id = get_hash(patient_id)
+    if mapping:
+        patient_to_study = dict(read_csv(mapping))
+
+    if patient_to_study:
+        new_patient_key = patient_to_study.get(patient_id, hash_pat_id)
+        output_dir = output_dir.replace(os.sep + patient_id + os.sep, os.sep + new_patient_key + os.sep)
+    elif not keep_patient_key:
+        output_dir = output_dir.replace(os.sep + patient_id + os.sep, os.sep + hash_pat_id + os.sep)
+
     if overwrite:
-        shutil.rmtree(output_dir, ignore_errors=True)
+        for folder in [output_dir, org_output_dir]:
+            shutil.rmtree(folder, ignore_errors=True)
     else:
         if os.path.exists(output_dir):
             # Check if output_dir contains metadata.json and files with the specified image_format
@@ -314,9 +338,6 @@ def process_dcm(
                     )
                 return "", ""
 
-    # Load both DICOM files in the input directory
-    dcm_objs = [dcmread(os.path.join(input_dir, f)) for f in os.listdir(input_dir) if f.endswith(".dcm")]
-    dcm_objs.sort(key=lambda x: x.Modality)
     dcms = []
     # using AccessionNumber to emulate group_id
     for dcm in dcm_objs:
@@ -325,31 +346,69 @@ def process_dcm(
             continue  # Ignore any other modalities
 
         dcm.AccessionNumber = 0
-        # process images
-        arr = dcm.pixel_array
-        os.makedirs(output_dir, exist_ok=True)
 
         if not dcm.get("NumberOfFrames"):
             dcm.NumberOfFrames = 1
 
-        if dcm.NumberOfFrames == 1:
-            arr = np.expand_dims(arr, axis=0)
-
-        for i in range(dcm.NumberOfFrames):
-            out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
-            if os.path.exists(out_img):
-                dcm.AccessionNumber += 1  # increase group_id
-                out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
-
-            array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
-            image = Image.fromarray(array)
-            image.save(out_img)
-
         dcms.append(dcm)
 
-    return process_dcm_meta(dcm_objs=dcms, output_dir=output_dir, mapping=mapping, keep=keep)
+    if group:
+        # Group DICOM files by AcquisitionDateTime
+        grouped_dcms = defaultdict(list)
+        for dcm in dcms:
+            acquisition_datetime = dcm.get("AcquisitionDateTime", "unknown")
+            grouped_dcms[acquisition_datetime].append(dcm)
+
+        # Sort groups by AcquisitionDateTime
+        sorted_groups = sorted(grouped_dcms.items())
+
+        for gid, (acquisition_datetime, group_dcms) in enumerate(sorted_groups):
+            group_dir = os.path.join(output_dir, f"group_{gid}")
+            os.makedirs(group_dir, exist_ok=True)
+
+            for dcm in group_dcms:
+                # process images
+                arr = dcm.pixel_array
+
+                if dcm.NumberOfFrames == 1:
+                    arr = np.expand_dims(arr, axis=0)
+
+                for i in range(dcm.NumberOfFrames):
+                    out_img = os.path.join(group_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
+                    array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
+                    image = Image.fromarray(array)
+                    image.save
+                    image.save(out_img)
+
+            # Process metadata for the grouped DCMs
+            new, old = process_dcm_meta(dcm_objs=group_dcms, output_dir=group_dir, mapping=mapping, keep=keep)
+
+    else:
+        os.makedirs(output_dir, exist_ok=True)
+
+        for dcm in dcms:
+            # process images
+            arr = dcm.pixel_array
+
+            if dcm.NumberOfFrames == 1:
+                arr = np.expand_dims(arr, axis=0)
+
+            for i in range(dcm.NumberOfFrames):
+                out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
+                if os.path.exists(out_img):
+                    dcm.AccessionNumber += 1  # increase group_id
+                    out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
+
+                array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
+                image = Image.fromarray(array)
+                image.save(out_img)
+
+        new, old = process_dcm_meta(dcm_objs=dcms, output_dir=output_dir, mapping=mapping, keep=keep)
+
+    return new, old
 
 
+# Ensure that process_dcm_meta docstring includes RESERVED_CSV
 process_dcm.__doc__ = process_dcm.__doc__.format(RESERVED_CSV=RESERVED_CSV) if process_dcm.__doc__ else None
 
 
@@ -522,3 +581,53 @@ def write_to_csv(file_path: str | Path, data: list[list[str]], header: list[str]
         if header:
             writer.writerow(header)
         writer.writerows(data)
+
+
+def delete_if_empty(folder_path: str | Path, n_jobs: int = 1) -> bool:
+    """Check if a given path is an empty folder (including empty subfolders) and delete it if so.
+
+    This function recursively checks if the specified path and its subfolders are empty.
+    If a folder is empty, it is deleted. The function can operate in parallel for faster
+    processing of large directory structures.
+
+    Args:
+        folder_path (Union[str, Path]): The path to check and possibly delete.
+        n_jobs (int): The number of parallel jobs to run. Default is 1 (sequential processing).
+
+    Returns:
+        bool: True if the path was an empty folder (or contained only empty subfolders) and was successfully deleted,
+              False otherwise.
+    """
+    path = Path(folder_path).resolve()
+
+    if not path.is_dir():
+        return False
+
+    def process_folder(folder: Path) -> bool:
+        is_empty = True
+        for item in folder.iterdir():
+            if item.is_file():
+                is_empty = False
+                break
+            if item.is_dir():
+                if not delete_if_empty(item, n_jobs=1):  # Recursive call, but without parallelism
+                    is_empty = False
+                    break
+
+        if is_empty:
+            folder.rmdir()
+        return is_empty
+
+    if n_jobs > 1:
+        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+            futures = [executor.submit(process_folder, subfolder) for subfolder in path.iterdir() if subfolder.is_dir()]
+            results = [future.result() for future in as_completed(futures)]
+
+            # Check if all subfolders were empty and deleted
+            if all(results) and not any(path.glob("*")):
+                path.rmdir()
+                return True
+    else:
+        return process_folder(path)
+
+    return False

@@ -66,6 +66,8 @@ def test_cli_without_args(runner):
 )
 def test_main(md5, meta, keep, janitor, runner):
     janitor.append("patient_2_study_id.csv")
+    janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     # Create a temporary directory using the tempfile module
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
@@ -100,6 +102,8 @@ def test_main_dummy(janitor, runner):
 
 def test_main_mapping(janitor, runner):
     janitor.append("patient_2_study_id.csv")
+    janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
         args = [
@@ -139,6 +143,7 @@ def test_main_abort(runner):
 def test_main_mapping_example_dir(janitor, runner):
     janitor.append("patient_2_study_id.csv")
     janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
         args = ["tests/example_dir", "-o", str(output_dir), "-j", "2", "-w", "-k", "nDg", "-m", "tests/map.csv"]
@@ -146,8 +151,8 @@ def test_main_mapping_example_dir(janitor, runner):
         assert result.exit_code == 0
         of = sorted(glob(f"{output_dir}/**/**/*"))
         assert len(of) == 262
-        assert get_md5(output_dir / "010-0001/20180724_L/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
-        assert get_md5(output_dir / "010-0002/20180926_R/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
+        assert get_md5(output_dir / "012345/20180724_L/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
+        assert get_md5(output_dir / "3517807670/20180926_R/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
 
 
 # skip this test for CI
@@ -155,17 +160,18 @@ def test_main_mapping_example_dir_relative(janitor, runner):
     input_dir = "tests/example_dir"
     janitor.append("patient_2_study_id.csv")
     janitor.append("patient_2_study_id_1.csv")
+    janitor.append("patient_2_study_id_2.csv")
     args = ["tests/example_dir", "-o", "dummy", "-j", "2", "-r", "-k", "nDg", "-m", "tests/map.csv"]
     result = runner.invoke(app, args)
     assert result.exit_code == 0
     of = sorted(glob(f"{input_dir}/**/**/dummy/*"))
-    path1 = Path(input_dir) / "010-0001/20180724_L/dummy"
-    path2 = Path(input_dir) / "010-0002/20180926_R/dummy"
+    path1 = Path(input_dir) / "012345"
+    path2 = Path(input_dir) / "3517807670"
     janitor.append(path1)
     janitor.append(path2)
     assert len(of) == 262
-    assert get_md5(path1 / "metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
-    assert get_md5(path2 / "metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
+    assert get_md5(path1 / "20180724_L/dummy/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
+    assert get_md5(path2 / "20180926_R/dummy/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
 
 
 def test_process_task():
@@ -177,5 +183,6 @@ def test_process_task():
         verbose = False
         keep = ""
         mapping = ""
-        result = process_task(task_data, image_format, overwrite, verbose, keep, mapping)
+        group = False
+        result = process_task(task_data, image_format, overwrite, verbose, keep, mapping, group)
         assert result == ("0780320450", "bbff7a25-d32c-4192-9330-0bb01d49f746")
