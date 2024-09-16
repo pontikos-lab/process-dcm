@@ -23,6 +23,39 @@ def remove_ansi_codes(text):
     return ansi_escape.sub("", text)
 
 
+def del_file_paths(file_paths: list[str]) -> None:
+    """Deletes all files and folders in the list of file paths.
+
+    Args:
+        file_paths (List[str]): A list of file paths to delete.
+
+    Returns:
+        None
+    """
+    for path in file_paths:
+        if not os.path.exists(path):
+            continue
+        if os.path.isfile(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            for root, dirs, files in os.walk(path, topdown=False):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
+            os.rmdir(path)
+
+
+def create_directory_structure(base_path, structure):
+    for item, content in structure.items():
+        path = base_path / item
+        if isinstance(content, dict):
+            path.mkdir(exist_ok=True)
+            create_directory_structure(path, content)
+        else:
+            path.write_text(content)
+
+
 @pytest.fixture(scope="module")
 def runner():
     return CliRunner()
@@ -209,24 +242,7 @@ def janitor() -> Generator[list[str], None, None]:
     del_file_paths(to_delete)
 
 
-def del_file_paths(file_paths: list[str]) -> None:
-    """Deletes all files and folders in the list of file paths.
-
-    Args:
-        file_paths (List[str]): A list of file paths to delete.
-
-    Returns:
-        None
-    """
-    for path in file_paths:
-        if not os.path.exists(path):
-            continue
-        if os.path.isfile(path):
-            os.remove(path)
-        elif os.path.isdir(path):
-            for root, dirs, files in os.walk(path, topdown=False):
-                for name in files:
-                    os.remove(os.path.join(root, name))
-                for name in dirs:
-                    os.rmdir(os.path.join(root, name))
-            os.rmdir(path)
+@pytest.fixture
+def temp_directory():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield Path(temp_dir)

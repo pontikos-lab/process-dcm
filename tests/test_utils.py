@@ -9,6 +9,7 @@ import typer
 
 from process_dcm.const import ImageModality
 from process_dcm.utils import (
+    delete_if_empty,
     do_date,
     get_md5,
     get_versioned_filename,
@@ -21,6 +22,7 @@ from process_dcm.utils import (
     update_modality,
     write_to_csv,
 )
+from tests.conftest import create_directory_structure
 
 
 def test_meta_images_optopol(dicom_opotopol, mocker):
@@ -279,3 +281,95 @@ def test_process_dcm_dummy_group(temp_output_dir):
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
     assert get_md5(os.path.join(temp_output_dir, "group_0", "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"
+
+
+def test_process_dcm_dummy_mapping(temp_output_dir):
+    new_patient_key, original_patient_key = process_dcm(
+        input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True, mapping="tests/map.csv"
+    )
+    assert new_patient_key, original_patient_key == ("2375458543", "123456")
+    assert get_md5(os.path.join(temp_output_dir, "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"
+
+
+def test_delete_empty_folder(temp_directory):
+    empty_folder = temp_directory / "empty"
+    empty_folder.mkdir()
+    assert delete_if_empty(empty_folder)
+    assert not empty_folder.exists()
+
+
+def test_delete_nested_empty_folders(temp_directory):
+    structure = {"parent": {"child1": {}, "child2": {"grandchild": {}}}}
+    create_directory_structure(temp_directory, structure)
+    assert delete_if_empty(temp_directory / "parent")
+    assert not (temp_directory / "parent").exists()
+
+
+def test_non_empty_folder(temp_directory):
+    structure = {"non_empty": {"file.txt": "content"}}
+    create_directory_structure(temp_directory, structure)
+    assert not delete_if_empty(temp_directory / "non_empty")
+    assert (temp_directory / "non_empty").exists()
+    assert (temp_directory / "non_empty" / "file.txt").exists()
+
+
+def test_mixed_structure(temp_directory):
+    structure = {"mixed": {"empty1": {}, "empty2": {}, "non_empty": {"file.txt": "content"}}}
+    create_directory_structure(temp_directory, structure)
+    assert not delete_if_empty(temp_directory / "mixed")
+    assert (temp_directory / "mixed").exists()
+    assert not (temp_directory / "mixed" / "empty1").exists()
+    assert not (temp_directory / "mixed" / "empty2").exists()
+    assert (temp_directory / "mixed" / "non_empty").exists()
+
+
+def test_non_existent_path():
+    assert not delete_if_empty("/path/does/not/exist")
+
+
+def test_file_path(temp_directory):
+    file_path = temp_directory / "file.txt"
+    file_path.write_text("content")
+    assert not delete_if_empty(file_path)
+    assert file_path.exists()
+
+
+@pytest.mark.parametrize("n_jobs", [2, 4, 8])
+def test_parallel_processing(temp_directory, n_jobs):
+    structure = {
+        "nested1": {
+            "subnested1": {},  # An empty sub-subdirectory
+            "subnested2": {},  # Another empty sub-subdirectory
+        },
+        "nested2": {
+            "subnested1": {},  # An empty sub-subdirectory
+        },
+        "empty": {},  # Another top-level empty directory
+    }
+    create_directory_structure(temp_directory, structure)
+
+    result = delete_if_empty(temp_directory, n_jobs=n_jobs)
+
+    # The top-level directory should be deleted because all subdirectories are empty
+    assert result is True, "Expected the top-level directory to be empty and deleted"
+    assert not temp_directory.exists(), "Expected the top-level directory to no longer exist"
+
+
+@pytest.mark.parametrize("n_jobs", [2, 4, 8])
+def test_parallel_processing_mixed_structure(temp_directory, n_jobs):
+    structure = {
+        "nested1": {
+            "subnested1": {},  # An empty sub-subdirectory
+            "subnested2": {},  # Another empty sub-subdirectory
+        },
+        "empty": {},  # Another top-level empty directory
+        "file.txt": "content",  # A file in the top-level directory, should prevent deletion
+    }
+    create_directory_structure(temp_directory, structure)
+
+    result = delete_if_empty(temp_directory, n_jobs=n_jobs)
+
+    # The top-level directory should not be deleted because it contains a file
+    assert result is False, "Expected the top-level directory to not be deleted due to the presence of files"
+    assert temp_directory.exists(), "Expected the top-level directory to still exist"
+    assert (temp_directory / "file.txt").exists(), "Expected the file to still exist in the top-level directory"

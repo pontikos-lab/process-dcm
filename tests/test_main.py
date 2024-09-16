@@ -151,8 +151,8 @@ def test_main_mapping_example_dir(janitor, runner):
         assert result.exit_code == 0
         of = sorted(glob(f"{output_dir}/**/**/*"))
         assert len(of) == 262
-        assert get_md5(output_dir / "010-0001/20180724_L/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
-        assert get_md5(output_dir / "010-0002/20180926_R/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
+        assert get_md5(output_dir / "012345/20180724_L/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
+        assert get_md5(output_dir / "3517807670/20180926_R/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
 
 
 # skip this test for CI
@@ -165,13 +165,13 @@ def test_main_mapping_example_dir_relative(janitor, runner):
     result = runner.invoke(app, args)
     assert result.exit_code == 0
     of = sorted(glob(f"{input_dir}/**/**/dummy/*"))
-    path1 = Path(input_dir) / "010-0001/20180724_L/dummy"
-    path2 = Path(input_dir) / "010-0002/20180926_R/dummy"
+    path1 = Path(input_dir) / "012345"
+    path2 = Path(input_dir) / "3517807670"
     janitor.append(path1)
     janitor.append(path2)
     assert len(of) == 262
-    assert get_md5(path1 / "metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
-    assert get_md5(path2 / "metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
+    assert get_md5(path1 / "20180724_L/dummy/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
+    assert get_md5(path2 / "20180926_R/dummy/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
 
 
 def test_process_task():

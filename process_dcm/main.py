@@ -11,7 +11,7 @@ from rich.progress import track
 
 from process_dcm import __version__
 from process_dcm.const import RESERVED_CSV
-from process_dcm.utils import find_dicom_folders_with_base, process_and_save_csv, process_dcm
+from process_dcm.utils import delete_if_empty, find_dicom_folders_with_base, process_and_save_csv, process_dcm
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -136,6 +136,8 @@ def main(
 
     unique_sorted_results = sorted(set(results))  # (study_id, patient_id)
     dict_res = dict(unique_sorted_results)
+
+    delete_if_empty(output_dir, n_jobs=n_jobs)
 
     if mapping:
         with open(mapping) as file:
