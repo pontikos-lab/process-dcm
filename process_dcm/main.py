@@ -105,7 +105,7 @@ def main(
             fg=typer.colors.BRIGHT_YELLOW,
         )
 
-    len_sf, base_dir, subfolders = find_dicom_folders_with_base(input_dir)
+    len_sf, base_dir, subfolders = find_dicom_folders_with_base(os.path.abspath(input_dir))
     output_dirs = []
 
     if os.path.isabs(output_dir):
@@ -121,7 +121,7 @@ def main(
             output_dirs = [os.path.join(x, output_dir) for x in subfolders]
         else:
             output_dir = os.path.abspath(output_dir)
-            output_dirs = [x.replace(base_dir, output_dir) for x in subfolders]
+            output_dirs = [x.replace(os.path.abspath(base_dir), output_dir) for x in subfolders]
 
     tasks = list(zip(subfolders, output_dirs))
 
