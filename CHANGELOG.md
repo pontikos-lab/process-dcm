@@ -1,3 +1,10 @@
+## v0.4.1 (2024-09-30)
+
+### Fix
+
+- :bug: Fix output dir bug
+- :bug: Fix wrong py_dcm_version in metadata.json
+
 ## v0.4.0 (2024-09-16)
 
 ### Feat
