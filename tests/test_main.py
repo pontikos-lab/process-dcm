@@ -8,7 +8,7 @@ from process_dcm import __version__
 from process_dcm.const import RESERVED_CSV
 from process_dcm.main import app, process_task
 from process_dcm.utils import get_md5
-from tests.conftest import remove_ansi_codes
+from tests.conftest import bottom, remove_ansi_codes
 
 
 def test_main_defaults(runner):
@@ -59,9 +59,9 @@ def test_cli_without_args(runner):
 @pytest.mark.parametrize(
     "md5, meta, keep",
     [
-        (["837808d746aef8e2dd08defbdbc70818"], "0a9a930806f2784aa4e60d47b3bad6ed", "pndg"),
-        (["7a355bb7e0c95155d1541c7fe0941c5e"], "fd6c5a84aca6499b0ea8b99d4e25dc92", "pnDg"),
-        (["2319181ecfc33d35b01dcec65ab2c568"], "35fe295648681e3521da8dddaed63705", ""),
+        (["5ba37cc43233db423394cf98c81d5fbc"], "27e4fa04ad730718b2509af36743c995", "pndg"),
+        (["5ba37cc43233db423394cf98c81d5fbc"], "3a15fdd18a67b3d4ce7be6164f58f073", "pnDg"),
+        (["5ba37cc43233db423394cf98c81d5fbc"], "ba5973bc8dd8e15aa6bef95bcd248fbf", ""),
     ],
 )
 def test_main(md5, meta, keep, janitor, runner):
@@ -83,9 +83,10 @@ def test_main(md5, meta, keep, janitor, runner):
         ]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
-        of = sorted(glob(f"{output_dir}/**/*"))
-        assert len(of) == 51
-        assert get_md5(output_dir / "example-dcms/metadata.json") == meta
+        tof = sorted(glob(f"{output_dir}/**/*"))
+        of = [x for x in tof if "metadata.json" not in x]
+        assert len(tof) == 51
+        assert get_md5(output_dir / "example-dcms/metadata.json", bottom) == meta
         assert get_md5(of) in md5
 
 
@@ -94,10 +95,11 @@ def test_main_dummy(janitor, runner):
     args = ["tests/dummy_ex", "-o", "dummy_dir", "-k", "p"]
     result = runner.invoke(app, args)
     assert result.exit_code == 0
-    of = sorted(glob("dummy_dir/**/*"))
-    assert len(of) == 2
-    assert get_md5("dummy_dir/dummy_ex/metadata.json") == "1cabdb14492a0e62d80cfc0a3fe304e9"
-    assert get_md5(of) in "b19bbfca59584915295f67e9259880d7"
+    tof = sorted(glob("dummy_dir/**/*"))
+    of = [x for x in tof if "metadata.json" not in x]
+    assert len(tof) == 2
+    assert get_md5("dummy_dir/dummy_ex/metadata.json", bottom) == "0fbf0de5556e77447925ff3bfaf8168e"
+    assert get_md5(of) in ["377b5a17c284226518ccef9bddff25af"]
 
 
 def test_main_mapping(janitor, runner):
@@ -121,10 +123,11 @@ def test_main_mapping(janitor, runner):
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         assert "WARN: '--relative' x 'absolute --output_dir'" in result.output
-        of = sorted(glob(f"{output_dir}/**/*"))
-        assert len(of) == 51
-        assert get_md5(output_dir / "example-dcms/metadata.json") == "261826ad2e067e9adb7143bb6c053dbc"
-        assert get_md5(of) in "6ff8e2fe69c5fbe86f81f44f74496cab"
+        tof = sorted(glob(f"{output_dir}/**/*"))
+        of = [x for x in tof if "metadata.json" not in x]
+        assert len(tof) == 51
+        assert get_md5(output_dir / "example-dcms/metadata.json", bottom) == "450e2e40d321a24219c1c9ec15b2c80e"
+        assert get_md5(of) in ["5ba37cc43233db423394cf98c81d5fbc"]
 
 
 def test_main_abort(runner):
@@ -151,8 +154,8 @@ def test_main_mapping_example_dir(janitor, runner):
         assert result.exit_code == 0
         of = sorted(glob(f"{output_dir}/**/**/*"))
         assert len(of) == 262
-        assert get_md5(output_dir / "012345/20180724_L/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
-        assert get_md5(output_dir / "3517807670/20180926_R/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
+        assert get_md5(output_dir / "012345/20180724_L/metadata.json", bottom) == "93fff12758d6c0f9098e7fd5e8c8304e"
+        assert get_md5(output_dir / "3517807670/20180926_R/metadata.json", bottom) == "b9ff35a765db6b1eaeac4253c93a6044"
 
 
 # skip this test for CI
@@ -170,8 +173,8 @@ def test_main_mapping_example_dir_relative(janitor, runner):
     janitor.append(path1)
     janitor.append(path2)
     assert len(of) == 262
-    assert get_md5(path1 / "20180724_L/dummy/metadata.json") == "1b46961177c80daf69e7dea7379fcc31"
-    assert get_md5(path2 / "20180926_R/dummy/metadata.json") == "bbf5c47f9fb28f46b4cc1bf08c311593"
+    assert get_md5(path1 / "20180724_L/dummy/metadata.json", bottom) == "93fff12758d6c0f9098e7fd5e8c8304e"
+    assert get_md5(path2 / "20180926_R/dummy/metadata.json", bottom) == "b9ff35a765db6b1eaeac4253c93a6044"
 
 
 def test_process_task():

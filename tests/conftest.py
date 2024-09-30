@@ -13,6 +13,8 @@ from typer.testing import CliRunner
 from process_dcm import __version__ as version
 from process_dcm.const import ImageModality
 
+bottom = 11
+
 
 def pytest_report_header():
     return f">>>\tVersion: {version}\n"
@@ -46,7 +48,8 @@ def del_file_paths(file_paths: list[str]) -> None:
             os.rmdir(path)
 
 
-def create_directory_structure(base_path, structure):
+def create_directory_structure(base_path: Path, structure: dict) -> None:
+    """Creates a directory structure recursively."""
     for item, content in structure.items():
         path = base_path / item
         if isinstance(content, dict):

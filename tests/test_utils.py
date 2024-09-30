@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 import pytest
 import typer
+from pydicom.dataset import FileDataset
+from pytest_mock import MockerFixture
 
 from process_dcm.const import ImageModality
 from process_dcm.utils import (
@@ -22,10 +24,11 @@ from process_dcm.utils import (
     update_modality,
     write_to_csv,
 )
-from tests.conftest import create_directory_structure
+from tests.conftest import bottom, create_directory_structure
 
 
-def test_meta_images_optopol(dicom_opotopol, mocker):
+def test_meta_images_optopol(dicom_opotopol: FileDataset, mocker: MockerFixture) -> None:
+    """Test the meta_images function with an Optopol DICOM dataset."""
     # Mock the typer.secho call for empty photo locations
     mock_secho = mocker.patch("typer.secho")
     update_modality(dicom_opotopol)
@@ -36,7 +39,7 @@ def test_meta_images_optopol(dicom_opotopol, mocker):
     mock_secho.assert_called_with("WARN: empty photo_locations", fg=typer.colors.RED)
 
 
-def test_meta_images_attribute_error(dicom_attribute_error):
+def test_meta_images_attribute_error(dicom_attribute_error: FileDataset) -> None:
     """Test for handling AttributeError."""
     try:
         update_modality(dicom_attribute_error)
@@ -46,7 +49,7 @@ def test_meta_images_attribute_error(dicom_attribute_error):
         pytest.fail("meta_images failed to handle missing attributes gracefully")
 
 
-def test_meta_images_with_photo_locations(dicom_with_photo_locations):
+def test_meta_images_with_photo_locations(dicom_with_photo_locations: FileDataset) -> None:
     """Test for valid photo locations in meta_images result."""
     update_modality(dicom_with_photo_locations)
     meta = meta_images(dicom_with_photo_locations)
@@ -57,28 +60,28 @@ def test_meta_images_with_photo_locations(dicom_with_photo_locations):
     ), "Photo locations not found or incomplete in metadata"
 
 
-def test_absolute_path_symlink():
+def test_absolute_path_symlink() -> None:
     with patch("pathlib.Path.resolve") as mock_resolve:
         mock_resolve.return_value = Path("/resolved/path")
         assert set_output_dir("/home/user", "/symlink") == "/resolved/path"
 
 
-def test_absolute_path_broken_symlink():
+def test_absolute_path_broken_symlink() -> None:
     with patch("pathlib.Path.resolve", side_effect=FileNotFoundError):
         assert set_output_dir("/home/user", "/broken_symlink") == "/home/user/exported_data"
 
 
-def test_relative_path():
+def test_relative_path() -> None:
     assert set_output_dir("/home/user", "relative/path") == "/home/user/relative/path"
 
 
-def test_broken_symlink_as_relative():
+def test_broken_symlink_as_relative() -> None:
     with patch("pathlib.Path.is_absolute", return_value=False):
         with patch("pathlib.Path.resolve", side_effect=FileNotFoundError):
             assert set_output_dir("/home/user", "exported_data") == "/home/user/exported_data"
 
 
-def test_relative_path_with_up():
+def test_relative_path_with_up() -> None:
     assert set_output_dir("/home/user", "../up/relative") == "/home/user/../up/relative"
 
 
@@ -93,14 +96,14 @@ def test_do_date() -> None:
     assert do_date("InvalidDate", "%Y%m%d", "%Y-%m-%d") == ""
 
 
-def test_update_modality_opt(dicom_base):
+def test_update_modality_opt(dicom_base: FileDataset) -> None:
     """Test updating modality when the modality is OPT."""
     dicom_base.Modality = "OPT"
     assert update_modality(dicom_base) is True
-    assert dicom_base.Modality == ImageModality.OCT
+    assert dicom_base.Modality == ImageModality.OCT  # type: ignore
 
 
-def test_update_modality_op_topcon(dicom_base):
+def test_update_modality_op_topcon(dicom_base: FileDataset) -> None:
     """Test updating modality when the modality is OP and manufacturer is TOPCON."""
     dicom_base.Modality = "OP"
     dicom_base.Manufacturer = "TOPCON"
@@ -108,7 +111,7 @@ def test_update_modality_op_topcon(dicom_base):
     assert dicom_base.Modality == ImageModality.COLOUR_PHOTO
 
 
-def test_update_modality_op_ir(dicom_base):
+def test_update_modality_op_ir(dicom_base: FileDataset) -> None:
     """Test updating modality when the modality is OP and SeriesDescription contains IR."""
     dicom_base.Modality = "OP"
     dicom_base.Manufacturer = "Another Manufacturer"
@@ -117,7 +120,7 @@ def test_update_modality_op_ir(dicom_base):
     assert dicom_base.Modality == ImageModality.SLO_INFRARED
 
 
-def test_update_modality_unknown(dicom_base):
+def test_update_modality_unknown(dicom_base: FileDataset) -> None:
     """Test updating modality when it results in unknown."""
     dicom_base.Modality = "OP"
     dicom_base.Manufacturer = "Unknown Manufacturer"
@@ -126,7 +129,7 @@ def test_update_modality_unknown(dicom_base):
     assert dicom_base.Modality == ImageModality.UNKNOWN
 
 
-def test_update_modality_unsupported(dicom_base):
+def test_update_modality_unsupported(dicom_base: FileDataset) -> None:
     """Test update_modality when the modality is unsupported."""
     dicom_base.Modality = "UNSUPPORTED"
     assert update_modality(dicom_base) is False
@@ -145,7 +148,9 @@ def test_update_modality_unsupported(dicom_base):
         (" MColor ", ImageModality.REFLECTANCE_MCOLOR),
     ],
 )
-def test_update_modality_op_various_descriptions(dicom_base, description, expected_modality):
+def test_update_modality_op_various_descriptions(
+    dicom_base: FileDataset, description: str, expected_modality: ImageModality
+) -> None:
     """Test updating modality for various SeriesDescription values."""
     dicom_base.Modality = "OP"
     dicom_base.SeriesDescription = description
@@ -153,7 +158,7 @@ def test_update_modality_op_various_descriptions(dicom_base, description, expect
     assert dicom_base.Modality == expected_modality
 
 
-def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base):
+def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base: FileDataset) -> None:
     # Call the function with "D" in keep
     with TemporaryDirectory() as tmpdir:
         process_dcm_meta([dicom_base], tmpdir, keep="D", mapping="tests/map.csv")
@@ -162,7 +167,7 @@ def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base):
         assert rjson["patient"]["patient_key"] == "00123"
 
 
-def test_process_and_save_csv(csv_data, unique_sorted_results):
+def test_process_and_save_csv(csv_data, unique_sorted_results) -> None:
     with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
@@ -272,7 +277,7 @@ def test_process_dcm_dummy(temp_output_dir):
         input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert get_md5(os.path.join(temp_output_dir, "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"
+    assert get_md5(os.path.join(temp_output_dir, "metadata.json")) == "1f2e613b856337aa46a35c641a95a4bd"
 
 
 def test_process_dcm_dummy_group(temp_output_dir):
@@ -280,7 +285,7 @@ def test_process_dcm_dummy_group(temp_output_dir):
         input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True, group=True
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert get_md5(os.path.join(temp_output_dir, "group_0", "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"
+    assert get_md5(os.path.join(temp_output_dir, "group_0", "metadata.json")) == "1f2e613b856337aa46a35c641a95a4bd"
 
 
 def test_process_dcm_dummy_mapping(temp_output_dir):
@@ -288,7 +293,7 @@ def test_process_dcm_dummy_mapping(temp_output_dir):
         input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True, mapping="tests/map.csv"
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert get_md5(os.path.join(temp_output_dir, "metadata.json")) == "3ec329aacc807f470426d1b3706669fc"
+    assert get_md5(os.path.join(temp_output_dir, "metadata.json"), bottom) == "75a81f29397d3919603a8d55b305fdb1"
 
 
 def test_delete_empty_folder(temp_directory):
@@ -356,7 +361,7 @@ def test_parallel_processing(temp_directory, n_jobs):
 
 
 @pytest.mark.parametrize("n_jobs", [2, 4, 8])
-def test_parallel_processing_mixed_structure(temp_directory, n_jobs):
+def test_parallel_processing_mixed_structure(temp_directory: Path, n_jobs: int) -> None:
     structure = {
         "nested1": {
             "subnested1": {},  # An empty sub-subdirectory

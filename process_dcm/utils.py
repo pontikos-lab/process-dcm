@@ -21,6 +21,7 @@ from PIL import Image
 from pydicom.dataset import FileDataset
 from pydicom.filereader import dcmread
 
+from process_dcm import __version__
 from process_dcm.const import RESERVED_CSV, ImageModality
 
 warnings.filterwarnings("ignore", category=UserWarning, message="A value of type *")
@@ -153,7 +154,7 @@ def process_dcm_meta(
     metadata["series"] = {}
     metadata["images"]["images"] = []
     metadata["parser_version"] = [1, 5, 2]
-    metadata["py_dcm_version"] = [0, 1, 0]
+    metadata["py_dcm_version"] = list(map(int, __version__.split(".")))
 
     keep_gender = "g" in keep
     keep_names = "n" in keep
@@ -449,18 +450,22 @@ def find_dicom_folders_with_base(root_folder: str) -> tuple[int, str, list[str]]
     return len_ins, base_dir, natsorted(folders)
 
 
-def get_md5(file_path: Path | str | list[str]) -> str:
-    """Calculate the MD5 checksum of a file or list of files."""
+def get_md5(file_path: Path | str | list[str], minus: int = 0) -> str:
+    """Calculate the MD5 checksum of a file or list of files, optionally suppressing lines from the bottom."""
     md5_hash = hashlib.md5()
-    if isinstance(file_path, str) or isinstance(file_path, Path):
-        with open(file_path, "rb") as f:
-            while chunk := f.read(4096):
-                md5_hash.update(chunk)
+
+    def process_file(file: Path | str) -> None:
+        with open(file, "rb") as f:
+            lines = f.readlines()
+            for line in lines[:-minus] if minus > 0 else lines:
+                md5_hash.update(line)
+
+    if isinstance(file_path, str | Path):
+        process_file(file_path)
     elif isinstance(file_path, list):
         for fname in file_path:
-            with open(fname, "rb") as f:
-                while chunk := f.read(4096):
-                    md5_hash.update(chunk)
+            process_file(fname)
+
     return md5_hash.hexdigest()
 
 
