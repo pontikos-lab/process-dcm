@@ -58,6 +58,7 @@ jobs:
           echo "bump=$(cz bump --dry-run 2>&1 | grep -q 'bump:' && echo 'yes' || echo 'no')" >> $GITHUB_OUTPUT
 
       - name: Set up Git user
+        if: steps.check.outputs.bump == 'yes'
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
@@ -70,6 +71,7 @@ jobs:
           echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
 
       - name: Build project
+        if: steps.check.outputs.bump == 'yes'
         run: poetry build
 
       - name: Generate Changelog
