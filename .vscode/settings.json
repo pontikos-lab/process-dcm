@@ -39,5 +39,6 @@
       "source.organizeImports": "explicit"
     },
     "editor.formatOnType": true
-  }
+  },
+  "conventionalCommits.scopes": ["deps"]
 }
