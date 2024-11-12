@@ -20,33 +20,33 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 opencv-python-headless = "^4.10.0.84"
-typer = "^0.12.5"
+typer = "^0.13.0"
 pydicom = "^3.0.1"
 natsort = "^8.4.0"
-pillow = "^10.4.0"
+pillow = "^11.0.0"
 python-gdcm = "^3.0.24.1"
 
 [tool.poetry.scripts]
 process-dcm = "process_dcm.main:cli"
 
 [tool.poetry.group.dev.dependencies]
-boto3-stubs = { extras = ["lambda", "s3"], version = "1.35.29" }
+boto3-stubs = { extras = ["lambda", "s3"], version = "1.35.58" }
 ipdb = "0.13.13"
-ipython = "8.27.0"
-jupyterlab = "4.2.5"
-mypy = "1.11.2"
-mypy-boto3-lambda = "1.35.28"
-mypy-boto3-s3 = "1.35.22"
-pandas-stubs = "2.2.2.240909"
+ipython = "8.29.0"
+jupyterlab = "4.3.0"
+mypy = "1.13.0"
+mypy-boto3-lambda = "1.35.58"
+mypy-boto3-s3 = "1.35.46"
+pandas-stubs = "2.2.3.241009"
 pdbpp = "0.10.3"
-pip = "24.2"
-pre-commit = "3.8.0"
-pytest-cov = "5.0.0"
+pip = "24.3.1"
+pre-commit = "4.0.1"
+pytest-cov = "6.0.0"
 pytest-env = "1.1.5"
 pytest-xdist = "3.6.1"
-ruff = "0.6.8"
+ruff = "0.7.3"
 typed-argument-parser = "1.10.1"
-wheel = "0.44.0"
+wheel = "0.45.0"
 pytest-mock = "^3.14.0"
 
 [tool.pytest.ini_options]

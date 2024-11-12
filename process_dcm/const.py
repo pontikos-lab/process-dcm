@@ -3,7 +3,7 @@
 from enum import Enum, Flag, auto, unique
 from typing import cast
 
-RESERVED_CSV = "patient_2_study_id.csv"
+RESERVED_CSV = "study_2_patient.csv"
 
 
 class ModalityFlag(Flag):

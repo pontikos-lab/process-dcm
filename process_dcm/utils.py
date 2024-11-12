@@ -10,7 +10,7 @@ import tempfile
 import warnings
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import cv2
@@ -273,6 +273,29 @@ def update_modality(dcm: FileDataset) -> bool:
     return True  # Modality updated successfully
 
 
+def group_dcms_by_acquisition_time(dcms: list[FileDataset], tolerance_seconds: int = 2) -> dict[str, list[FileDataset]]:
+    """Group DICOM files by AcquisitionDateTime within the specified tolerance."""
+    grouped_dcms: dict[str, list[FileDataset]] = defaultdict(list)
+    for dcm in dcms:
+        acquisition_datetime_str = dcm.get("AcquisitionDateTime", "unknown")
+        if acquisition_datetime_str != "unknown":
+            acquisition_datetime = datetime.strptime(acquisition_datetime_str, "%Y%m%d%H%M%S.%f")
+            # Find the closest group within the tolerance
+            for group_time_str, group in grouped_dcms.items():
+                if group_time_str != "unknown":
+                    group_time = datetime.strptime(group_time_str, "%Y%m%d%H%M%S.%f")
+                    if abs(acquisition_datetime - group_time) <= timedelta(seconds=tolerance_seconds):
+                        grouped_dcms[group_time_str].append(dcm)
+                        break
+            else:
+                # If no close group found, create a new one
+                grouped_dcms[acquisition_datetime_str].append(dcm)
+        else:
+            grouped_dcms["unknown"].append(dcm)
+
+    return grouped_dcms
+
+
 def process_dcm(
     input_dir: str | Path,
     image_format: str = "png",
@@ -282,6 +305,7 @@ def process_dcm(
     overwrite: bool = False,
     quiet: bool = False,
     group: bool = False,
+    tol: int = 2,
 ) -> tuple[str, str]:
     """Process DICOM files from the input directory and save images in the specified format.
 
@@ -298,6 +322,7 @@ def process_dcm(
         overwrite (bool, optional): Whether to overwrite existing files in the output directory. Defaults to False.
         quiet (bool, optional): Silence verbosity. Defaults to False.
         group (bool, optional): Whether to re-group DICOM files by AcquisitionDateTime. Defaults to False.
+        tol (int, optional): Tolerance in seconds for grouping DICOM files by AcquisitionDateTime. Defaults to 2.
 
     Returns:
         tuple[str, str]: A tuple containing the new patient key and the original patient key.
@@ -355,15 +380,12 @@ def process_dcm(
 
     if group:
         # Group DICOM files by AcquisitionDateTime
-        grouped_dcms = defaultdict(list)
-        for dcm in dcms:
-            acquisition_datetime = dcm.get("AcquisitionDateTime", "unknown")
-            grouped_dcms[acquisition_datetime].append(dcm)
+        grouped_dcms = group_dcms_by_acquisition_time(dcms, tolerance_seconds=tol)
 
         # Sort groups by AcquisitionDateTime
         sorted_groups = sorted(grouped_dcms.items())
 
-        for gid, (acquisition_datetime, group_dcms) in enumerate(sorted_groups):
+        for gid, (_, group_dcms) in enumerate(sorted_groups):
             group_dir = os.path.join(output_dir, f"group_{gid}")
             os.makedirs(group_dir, exist_ok=True)
 

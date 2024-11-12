@@ -24,7 +24,14 @@ def print_version(value: bool) -> None:
 
 
 def process_task(
-    task: tuple[str, str], image_format: str, overwrite: bool, quiet: bool, keep: str, mapping: str, group: bool
+    task: tuple[str, str],
+    image_format: str,
+    overwrite: bool,
+    quiet: bool,
+    keep: str,
+    mapping: str,
+    group: bool,
+    tol: int,
 ) -> tuple[str, str]:
     """Process task."""
     subfolder, out_dir = task
@@ -37,6 +44,7 @@ def process_task(
         keep=keep,
         mapping=mapping,
         group=group,
+        tol=tol,
     )
 
 
@@ -44,21 +52,24 @@ def process_task(
 def main(
     input_dir: str = typer.Argument(..., help="Input directory containing subfolders with DICOM files."),
     image_format: str = typer.Option(
-        "png", "-f", "--image_format", help="Image format for extracted images (png, jpg, webp). Defaults to: png"
+        "png", "-f", "--image_format", help="Image format for extracted images (png, jpg, webp)."
     ),
     output_dir: str = typer.Option(
         "exported_data",
         "-o",
         "--output_dir",
-        help="Output directory for extracted images and metadata. Defaults to: exported_data",
+        help="Output directory for extracted images and metadata.",
     ),
     group: bool = typer.Option(
         False, "-g", "--group", help="Re-group DICOM files in a given folder by AcquisitionDateTime."
     ),
+    tol: int = typer.Option(
+        2, "-t", "--tol", help="Tolerance in seconds for grouping DICOM files by AcquisitionDateTime."
+    ),
     relative: bool = typer.Option(
         False, "-r", "--relative", help="Save extracted data in folders relative to _input_dir_."
     ),
-    n_jobs: int = typer.Option(1, "-j", "--n_jobs", help="Number of parallel jobs. Defaults to: 1"),
+    n_jobs: int = typer.Option(1, "-j", "--n_jobs", help="Number of parallel jobs."),
     mapping: str = typer.Option(
         "",
         "-m",
@@ -94,6 +105,7 @@ def main(
         keep=keep,
         mapping=mapping,
         group=group,
+        tol=tol,
     )
 
     if mapping == RESERVED_CSV:
