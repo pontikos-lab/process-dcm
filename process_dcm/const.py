@@ -70,6 +70,12 @@ class ImageModality(Enum):
 
     FACE_PHOTO = ("FACE", "Face photo", ModalityFlag.IS_2D_IMAGE | ModalityFlag.IS_ANTERIOR | ModalityFlag.SENSITIVE)
 
+    PSEUDOCOLOUR_ULTRAWIDEFIELD = (
+        "PCUWF",
+        "Pseudocolour Ultra-widefield",
+        ModalityFlag.IS_2D_IMAGE | ModalityFlag.IS_INTERIOR | ModalityFlag.IS_COLOUR,
+    )
+
     # VF-related modalities
     FDF = ("FDF", "Flicker Defined Form Perimetry")
     SAP = ("SAP", "Standard Automated Perimetry")

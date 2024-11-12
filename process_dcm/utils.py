@@ -249,6 +249,8 @@ def update_modality(dcm: FileDataset) -> bool:
     elif dcm.Modality == "OP":
         if dcm.Manufacturer.upper() == "TOPCON":
             dcm.Modality = ImageModality.COLOUR_PHOTO
+        elif dcm.Manufacturer.upper() == "OPTOS" and dcm.HorizontalFieldOfView == 200:
+            dcm.Modality = ImageModality.PSEUDOCOLOUR_ULTRAWIDEFIELD
         elif " IR" in dcm.get("SeriesDescription", ""):
             dcm.Modality = ImageModality.SLO_INFRARED
         elif " BAF " in dcm.get("SeriesDescription", ""):

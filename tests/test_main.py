@@ -192,6 +192,21 @@ def test_process_task():
         assert result == ("0780320450", "bbff7a25-d32c-4192-9330-0bb01d49f746")
 
 
+def test_process_task_optos():
+    with TemporaryDirectory() as tmpdirname:
+        output_dir = Path(tmpdirname)
+        task_data = ("tests/example-optos/", str(output_dir))
+        image_format = "png"
+        overwrite = True
+        verbose = True
+        keep = ""
+        mapping = ""
+        group = True
+        tol = 2
+        result = process_task(task_data, image_format, overwrite, verbose, keep, mapping, group, tol)
+        assert result == ("0570586923", "BEH002")
+
+
 # def test_process_taskL():
 #     with TemporaryDirectory() as tmpdirname:
 #         output_dir = Path(tmpdirname)
