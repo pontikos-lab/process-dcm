@@ -1,3 +1,9 @@
+## v0.4.4 (2024-11-12)
+
+### Fix
+
+- :bug: Able to handle OPTOS PSEUDOCOLOUR_ULTRAWIDEFIELD modality
+
 ## v0.4.3 (2024-11-12)
 
 ### Fix
