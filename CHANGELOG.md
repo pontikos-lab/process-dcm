@@ -1,3 +1,9 @@
+## v0.4.3 (2024-11-12)
+
+### Fix
+
+- :bug: Added tolerance parameter for grouping AcquisitionDateTime
+
 ## v0.4.2 (2024-09-30)
 
 ## v0.4.1 (2024-09-30)
