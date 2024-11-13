@@ -47,7 +47,7 @@ def set_output_dir(ref_path: str | Path, a_path: str | Path) -> str:
 
     Args:
         ref_path: A reference path used when the given path is relative or broken.
-        a_path: The path to be analyzed and potentially resolved.
+        a_path: The path to be analysed and potentially resolved.
 
     Returns:
         The determined output directory as a POSIX string (using forward slashes).
@@ -123,7 +123,7 @@ def meta_images(dcm_obj: FileDataset) -> dict:
                         {"photo_locations": [{"start": {"x": cc[1], "y": cc[0]}, "end": {"x": cc[3], "y": cc[2]}}]}
                     )
                 else:
-                    typer.secho("WARN: empty photo_locations", fg=typer.colors.RED)
+                    typer.secho("\nWARN: empty photo_locations", fg=typer.colors.RED)
                     meta["contents"].append({"photo_locations": []})
 
     return meta
@@ -275,23 +275,44 @@ def update_modality(dcm: FileDataset) -> bool:
     return True  # Modality updated successfully
 
 
-def group_dcms_by_acquisition_time(dcms: list[FileDataset], tolerance_seconds: int = 2) -> dict[str, list[FileDataset]]:
-    """Group DICOM files by AcquisitionDateTime within the specified tolerance."""
+def group_dcms_by_acquisition_time(dcms: list[FileDataset], tol: int = 2) -> dict[str, list[FileDataset]]:
+    """Group DICOM files by AcquisitionDateTime within the specified tolerance.
+
+    Args:
+        dcms: List of DICOM FileDataset objects.
+        tol: Time tolerance for grouping in seconds.
+
+    Returns:
+        Dictionary of grouped DICOM files, keyed by acquisition datetime string.
+    """
     grouped_dcms: dict[str, list[FileDataset]] = defaultdict(list)
+
+    def parse_datetime(dt_str: str) -> datetime:
+        try:
+            return datetime.strptime(dt_str, "%Y%m%d%H%M%S.%f")
+        except ValueError:
+            return datetime.strptime(dt_str, "%Y%m%d%H%M%S")
+
     for dcm in dcms:
         acquisition_datetime_str = dcm.get("AcquisitionDateTime", "unknown")
         if acquisition_datetime_str != "unknown":
-            acquisition_datetime = datetime.strptime(acquisition_datetime_str, "%Y%m%d%H%M%S.%f")
-            # Find the closest group within the tolerance
-            for group_time_str, group in grouped_dcms.items():
-                if group_time_str != "unknown":
-                    group_time = datetime.strptime(group_time_str, "%Y%m%d%H%M%S.%f")
-                    if abs(acquisition_datetime - group_time) <= timedelta(seconds=tolerance_seconds):
-                        grouped_dcms[group_time_str].append(dcm)
-                        break
-            else:
-                # If no close group found, create a new one
-                grouped_dcms[acquisition_datetime_str].append(dcm)
+            try:
+                acquisition_datetime = parse_datetime(acquisition_datetime_str)
+                # Find the closest group within the tolerance
+                for group_time_str, group in grouped_dcms.items():
+                    if group_time_str != "unknown":
+                        group_time = parse_datetime(group_time_str)
+                        if abs(acquisition_datetime - group_time) <= timedelta(seconds=tol):
+                            grouped_dcms[group_time_str].append(dcm)
+                            break
+                else:
+                    # If no close group found, create a new one
+                    grouped_dcms[acquisition_datetime_str].append(dcm)
+            except ValueError:
+                typer.secho(
+                    f"\nWARN: Unexpected AcquisitionDateTime format: {acquisition_datetime_str}", fg=typer.colors.RED
+                )
+                grouped_dcms["unknown"].append(dcm)
         else:
             grouped_dcms["unknown"].append(dcm)
 
@@ -382,13 +403,20 @@ def process_dcm(
 
     if group:
         # Group DICOM files by AcquisitionDateTime
-        grouped_dcms = group_dcms_by_acquisition_time(dcms, tolerance_seconds=tol)
+        grouped_dcms = group_dcms_by_acquisition_time(dcms, tol=tol)
 
         # Sort groups by AcquisitionDateTime
         sorted_groups = sorted(grouped_dcms.items())
 
-        for gid, (_, group_dcms) in enumerate(sorted_groups):
+        for gid, (acquisition_time, group_dcms) in enumerate(sorted_groups):
             group_dir = os.path.join(output_dir, f"group_{gid}")
+
+            if acquisition_time == "unknown":
+                group_dir = os.path.join(output_dir, "group_UNK")
+                typer.secho(
+                    f"\nWARN: unknown AcquisitionDateTime, results in {group_dir} are not reliable", fg=typer.colors.RED
+                )
+
             os.makedirs(group_dir, exist_ok=True)
 
             for dcm in group_dcms:
@@ -400,6 +428,12 @@ def process_dcm(
 
                 for i in range(dcm.NumberOfFrames):
                     out_img = os.path.join(group_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
+                    if os.path.exists(out_img):
+                        dcm.AccessionNumber += 1  # increase group_id
+                        out_img = os.path.join(
+                            group_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}"
+                        )
+
                     array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
                     image = Image.fromarray(array)
                     image.save
@@ -551,7 +585,7 @@ def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, quiet: 
         unique_sorted_results (list): The data to be written to the CSV file. Each sublist
                                       represents a row with 'study_id' and 'patient_id'.
         reserved_csv (str): The path to the reserved CSV file.
-        quiet (bool, optional): Silene verbosity. Defaults to False.
+        quiet (bool, optional): Silence verbosity. Defaults to False.
     """
     temp_filename = save_to_temp_file(unique_sorted_results)
 

@@ -97,9 +97,9 @@ def test_main_dummy(janitor, runner):
     assert result.exit_code == 0
     tof = sorted(glob("dummy_dir/**/*"))
     of = [x for x in tof if "metadata.json" not in x]
-    assert len(tof) == 2
-    assert get_md5("dummy_dir/dummy_ex/metadata.json", bottom) == "0fbf0de5556e77447925ff3bfaf8168e"
-    assert get_md5(of) in ["377b5a17c284226518ccef9bddff25af"]
+    assert len(tof) == 3
+    assert get_md5("dummy_dir/dummy_ex/metadata.json", bottom) == "0693469a3fcf388d89627eb212ace2bc"
+    assert get_md5(of) in ["30b70623445f7c12d8ad773c9738c7ce"]
 
 
 def test_main_mapping(janitor, runner):
@@ -205,6 +205,21 @@ def test_process_task_optos():
         tol = 2
         result = process_task(task_data, image_format, overwrite, verbose, keep, mapping, group, tol)
         assert result == ("0570586923", "BEH002")
+
+
+def test_process_acquisition_datetime():
+    with TemporaryDirectory() as tmpdirname:
+        output_dir = Path(tmpdirname)
+        task_data = ("tests/cataract/", str(output_dir))
+        image_format = "png"
+        overwrite = True
+        verbose = True
+        keep = ""
+        mapping = ""
+        group = True
+        tol = 2
+        result = process_task(task_data, image_format, overwrite, verbose, keep, mapping, group, tol)
+        assert result == ("0558756784", "20241113-093410")
 
 
 # def test_process_taskL():

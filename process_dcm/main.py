@@ -1,4 +1,4 @@
-"""app to procces DCM files."""
+"""app to process DCM files."""
 
 import csv
 import os

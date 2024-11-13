@@ -36,7 +36,7 @@ def test_meta_images_optopol(dicom_opotopol: FileDataset, mocker: MockerFixture)
 
     assert meta["modality"] == "OCT", "Modality extraction failed"
     assert len(meta["contents"]) == 1  # Should correspond to NumberOfFrames
-    mock_secho.assert_called_with("WARN: empty photo_locations", fg=typer.colors.RED)
+    mock_secho.assert_called_with("\nWARN: empty photo_locations", fg=typer.colors.RED)
 
 
 def test_meta_images_attribute_error(dicom_attribute_error: FileDataset) -> None:
@@ -277,7 +277,7 @@ def test_process_dcm_dummy(temp_output_dir):
         input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert get_md5(os.path.join(temp_output_dir, "metadata.json"), bottom) == "75a81f29397d3919603a8d55b305fdb1"
+    assert get_md5(os.path.join(temp_output_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
 
 
 def test_process_dcm_dummy_group(temp_output_dir):
@@ -286,7 +286,8 @@ def test_process_dcm_dummy_group(temp_output_dir):
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
     assert (
-        get_md5(os.path.join(temp_output_dir, "group_0", "metadata.json"), bottom) == "75a81f29397d3919603a8d55b305fdb1"
+        get_md5(os.path.join(temp_output_dir, "group_UNK", "metadata.json"), bottom)
+        == "b1fb22938cd95348cbcb44a63ed34fcf"
     )
 
 
@@ -295,7 +296,7 @@ def test_process_dcm_dummy_mapping(temp_output_dir):
         input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True, mapping="tests/map.csv"
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert get_md5(os.path.join(temp_output_dir, "metadata.json"), bottom) == "75a81f29397d3919603a8d55b305fdb1"
+    assert get_md5(os.path.join(temp_output_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
 
 
 def test_delete_empty_folder(temp_directory):
