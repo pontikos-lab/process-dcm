@@ -1,3 +1,9 @@
+## v0.4.6 (2024-11-13)
+
+### Fix
+
+- :bug: Avoid overwriting images in some scenarios
+
 ## v0.4.5 (2024-11-13)
 
 ### Fix
