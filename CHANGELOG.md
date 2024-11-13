@@ -1,3 +1,9 @@
+## v0.4.7 (2024-11-13)
+
+### Fix
+
+- improve output details for unknown modalities
+
 ## v0.4.6 (2024-11-13)
 
 ### Fix
