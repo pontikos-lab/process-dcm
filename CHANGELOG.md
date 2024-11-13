@@ -1,3 +1,9 @@
+## v0.4.5 (2024-11-13)
+
+### Fix
+
+- :bug: Improve the way to handle AcquisitionDateTime
+
 ## v0.4.4 (2024-11-12)
 
 ### Fix
