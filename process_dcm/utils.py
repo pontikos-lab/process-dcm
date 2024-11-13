@@ -432,7 +432,7 @@ def process_dcm(
             continue  # Ignore any other modalities
         if dcmO.dcm_obj.Modality == ImageModality.UNKNOWN:
             typer.secho(
-                f"\nWARN: Unknown modality for {dcmO.filepath}",
+                f"\nWARN: Unknown modality for {dcmO.filepath}\n-> {output_dir}",
                 fg=typer.colors.RED,
             )
 
