@@ -27,6 +27,15 @@ from process_dcm.const import RESERVED_CSV, ImageModality
 warnings.filterwarnings("ignore", category=UserWarning, message="A value of type *")
 
 
+class DcmO:
+    """Class to handle DCM obj and its original file path."""
+
+    def __init__(self, dcm_obj: FileDataset, filepath: str) -> None:
+        """Initialize DcmO with a DICOM object and its file path."""
+        self.dcm_obj = dcm_obj
+        self.filepath = filepath
+
+
 def do_date(date_str: str, input_format: str, output_format: str) -> str:
     """Convert DCM datetime strings to metadata.json string format."""
     if "." not in date_str:
@@ -319,6 +328,29 @@ def group_dcms_by_acquisition_time(dcms: list[FileDataset], tol: int = 2) -> dic
     return grouped_dcms
 
 
+def process_dcm_images(dcm_objs: list, output_dir: str, image_format: str, mapping: str, keep: str) -> tuple[str, str]:
+    """Processes DICOM images and saves them to a directory."""
+    os.makedirs(output_dir, exist_ok=True)
+
+    for dcmO in dcm_objs:
+        # process images
+        arr = dcmO.pixel_array
+
+        if dcmO.NumberOfFrames == 1:
+            arr = np.expand_dims(arr, axis=0)
+
+        for i in range(dcmO.NumberOfFrames):
+            out_img = os.path.join(output_dir, f"{dcmO.Modality.code}-{dcmO.AccessionNumber}_{i}.{image_format}")
+            while os.path.exists(out_img):
+                dcmO.AccessionNumber += 1  # increase group_id
+                out_img = os.path.join(output_dir, f"{dcmO.Modality.code}-{dcmO.AccessionNumber}_{i}.{image_format}")
+
+            array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
+            image = Image.fromarray(array)
+            image.save(out_img)
+    return process_dcm_meta(dcm_objs=dcm_objs, output_dir=output_dir, mapping=mapping, keep=keep)
+
+
 def process_dcm(
     input_dir: str | Path,
     image_format: str = "png",
@@ -351,9 +383,14 @@ def process_dcm(
         tuple[str, str]: A tuple containing the new patient key and the original patient key.
     """
     # Load DICOM files from input directory
-    dcm_objs = [dcmread(os.path.join(input_dir, f)) for f in os.listdir(input_dir) if f.endswith(".dcm")]
-    dcm_objs.sort(key=lambda x: x.Modality)
-    patient_id = dcm_objs[0].PatientID
+    dcm_objs = [
+        DcmO(dcmread(os.path.join(input_dir, f)), os.path.join(input_dir, f))
+        for f in os.listdir(input_dir)
+        if f.endswith(".dcm")
+    ]
+
+    dcm_objs.sort(key=lambda dcmO: dcmO.dcm_obj.Modality)
+    patient_id = dcm_objs[0].dcm_obj.PatientID
 
     keep_patient_key = "p" in keep
     org_output_dir = output_dir
@@ -389,17 +426,22 @@ def process_dcm(
 
     dcms = []
     # using AccessionNumber to emulate group_id
-    for dcm in dcm_objs:
+    for dcmO in dcm_objs:
         # update modality
-        if not update_modality(dcm):
+        if not update_modality(dcmO.dcm_obj):
             continue  # Ignore any other modalities
+        if dcmO.dcm_obj.Modality == ImageModality.UNKNOWN:
+            typer.secho(
+                f"\nWARN: Unknown modality for {dcmO.filepath}",
+                fg=typer.colors.RED,
+            )
 
-        dcm.AccessionNumber = 0
+        dcmO.dcm_obj.AccessionNumber = 0
 
-        if not dcm.get("NumberOfFrames"):
-            dcm.NumberOfFrames = 1
+        if not dcmO.dcm_obj.get("NumberOfFrames"):
+            dcmO.dcm_obj.NumberOfFrames = 1
 
-        dcms.append(dcm)
+        dcms.append(dcmO.dcm_obj)
 
     if group:
         # Group DICOM files by AcquisitionDateTime
@@ -417,52 +459,14 @@ def process_dcm(
                     f"\nWARN: unknown AcquisitionDateTime, results in {group_dir} are not reliable", fg=typer.colors.RED
                 )
 
-            os.makedirs(group_dir, exist_ok=True)
-
-            for dcm in group_dcms:
-                # process images
-                arr = dcm.pixel_array
-
-                if dcm.NumberOfFrames == 1:
-                    arr = np.expand_dims(arr, axis=0)
-
-                for i in range(dcm.NumberOfFrames):
-                    out_img = os.path.join(group_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
-                    if os.path.exists(out_img):
-                        dcm.AccessionNumber += 1  # increase group_id
-                        out_img = os.path.join(
-                            group_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}"
-                        )
-
-                    array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
-                    image = Image.fromarray(array)
-                    image.save
-                    image.save(out_img)
-
-            # Process metadata for the grouped DCMs
-            new, old = process_dcm_meta(dcm_objs=group_dcms, output_dir=group_dir, mapping=mapping, keep=keep)
+            new, old = process_dcm_images(
+                dcm_objs=group_dcms, output_dir=group_dir, image_format=image_format, mapping=mapping, keep=keep
+            )
 
     else:
-        os.makedirs(output_dir, exist_ok=True)
-
-        for dcm in dcms:
-            # process images
-            arr = dcm.pixel_array
-
-            if dcm.NumberOfFrames == 1:
-                arr = np.expand_dims(arr, axis=0)
-
-            for i in range(dcm.NumberOfFrames):
-                out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
-                if os.path.exists(out_img):
-                    dcm.AccessionNumber += 1  # increase group_id
-                    out_img = os.path.join(output_dir, f"{dcm.Modality.code}-{dcm.AccessionNumber}_{i}.{image_format}")
-
-                array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
-                image = Image.fromarray(array)
-                image.save(out_img)
-
-        new, old = process_dcm_meta(dcm_objs=dcms, output_dir=output_dir, mapping=mapping, keep=keep)
+        new, old = process_dcm_images(
+            dcm_objs=dcms, output_dir=output_dir, image_format=image_format, mapping=mapping, keep=keep
+        )
 
     return new, old
 

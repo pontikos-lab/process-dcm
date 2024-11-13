@@ -222,6 +222,21 @@ def test_process_acquisition_datetime():
         assert result == ("0558756784", "20241113-093410")
 
 
+# def test_process_many():
+#     with TemporaryDirectory() as tmpdirname:
+#         output_dir = Path(tmpdirname)
+#         task_data = ("20220823_R/", str(output_dir))
+#         image_format = "png"
+#         overwrite = True
+#         verbose = True
+#         keep = ""
+#         mapping = ""
+#         group = False
+#         tol = 2
+#         result = process_task(task_data, image_format, overwrite, verbose, keep, mapping, group, tol)
+#         assert result == ("0558756784", "20241113-093410")
+
+
 # def test_process_taskL():
 #     with TemporaryDirectory() as tmpdirname:
 #         output_dir = Path(tmpdirname)
