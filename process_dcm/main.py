@@ -74,7 +74,7 @@ def main(
         "",
         "-m",
         "--mapping",
-        help=f"Path to CSV containing patient_id to study_id mapping. If not provided and patient_id is not anonymised, a '{RESERVED_CSV}' file will be generated",  # noqa: E501
+        help=f"Path to CSV containing patient_id to study_id mapping. If not provided and patient_id is not anonymised, a '{RESERVED_CSV}' file will be generated.",  # noqa: E501
     ),
     keep: str = typer.Option(
         "",
