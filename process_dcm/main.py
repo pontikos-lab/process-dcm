@@ -95,7 +95,7 @@ def main(
 ) -> None:
     """Process DICOM files in subfolders, extract images and metadata using parallel processing.
 
-    Version: 0.4.7
+    Version: 0.4.8
     """
     task_processor = partial(
         process_task,

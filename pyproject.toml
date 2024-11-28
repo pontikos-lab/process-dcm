@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "process-dcm"
-version = "0.4.7"
+version = "0.4.8"
 description = "Python library and app to extract images from DCM in a JSON-based standard format"
 authors = ["Alan Silva <3899850+alanwilter@users.noreply.github.com>"]
 readme = "README.md"

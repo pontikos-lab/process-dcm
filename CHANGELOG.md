@@ -1,3 +1,9 @@
+## v0.4.8 (2024-11-28)
+
+### Fix
+
+- :bug: Fix bug about existing folder when using re-group option
+
 ## v0.4.7 (2024-11-13)
 
 ### Fix
