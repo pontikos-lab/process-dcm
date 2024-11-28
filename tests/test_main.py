@@ -90,6 +90,25 @@ def test_main(md5, meta, keep, janitor, runner):
         assert get_md5(of) in md5
 
 
+def test_main_group(janitor, runner):
+    janitor.append("study_2_patient.csv")
+    janitor.append("study_2_patient_1.csv")
+    janitor.append("study_2_patient_2.csv")
+    with TemporaryDirectory() as tmpdirname:
+        output_dir = Path(tmpdirname)
+        args = ["tests/example-dcms", "-o", str(output_dir), "-j", "1", "-k", "gD", "-g"]
+        result = runner.invoke(app, args)
+        assert result.exit_code == 0
+        tof = sorted(output_dir.rglob("*.*"))
+        of = sorted(output_dir.rglob("*.png"))
+        assert len(tof) == 51
+        assert get_md5(output_dir / "example-dcms/group_0/metadata.json", bottom) == "5387538e2f018288154ec2e98d4d29b1"
+        assert get_md5(of) in ["5ba37cc43233db423394cf98c81d5fbc"]
+        result = runner.invoke(app, args)
+        assert result.exit_code == 0
+        assert "example-dcms/group_0' already exists with metadata" in result.output
+
+
 def test_main_dummy(janitor, runner):
     janitor.append("dummy_dir")
     args = ["tests/dummy_ex", "-o", "dummy_dir", "-k", "p"]

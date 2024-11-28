@@ -11,6 +11,7 @@ from pytest_mock import MockerFixture
 
 from process_dcm.const import ImageModality
 from process_dcm.utils import (
+    check_metadata_exists,
     delete_if_empty,
     do_date,
     get_md5,
@@ -251,52 +252,43 @@ def test_process_and_save_csv_no_changes(csv_data):
 
 
 # skip this test for CI
-def test_process_dcm(temp_output_dir, input_dir2, mocker):
+def test_process_dcm(temp_dir, input_dir2, mocker):
     mock_secho = mocker.patch("typer.secho")
-    new_patient_key, original_patient_key = process_dcm(
-        input_dir=input_dir2, output_dir=temp_output_dir, overwrite=True
-    )
-    output_dir = Path(temp_output_dir)
+    new_patient_key, original_patient_key = process_dcm(input_dir=input_dir2, output_dir=temp_dir, overwrite=True)
+    output_dir = Path(temp_dir)
     output_files_initial = list(output_dir.glob("*.png"))
     assert len(output_files_initial) == 130, "No images were processed initially."
     assert new_patient_key == "2910892726"
     assert original_patient_key == "010-0001"
 
     # Run process_dcm function with overwrite=False, should skip processing
-    new_patient_key, original_patient_key = process_dcm(
-        input_dir=input_dir2, output_dir=temp_output_dir, overwrite=False
-    )
+    new_patient_key, original_patient_key = process_dcm(input_dir=input_dir2, output_dir=temp_dir, overwrite=False)
     assert new_patient_key == ""
-    msg = f"Output directory '{temp_output_dir}' already exists with metadata and images. Skipping..."
+    msg = f"Output directory '{temp_dir}' already exists with metadata and images. Skipping..."
     mock_secho.assert_called_with(msg, fg=typer.colors.YELLOW)
     assert len(list(output_dir.glob("*.png"))) == len(output_files_initial)
 
 
-def test_process_dcm_dummy(temp_output_dir):
+def test_process_dcm_dummy(temp_dir):
+    new_patient_key, original_patient_key = process_dcm(input_dir="tests/dummy_ex", output_dir=temp_dir, overwrite=True)
+    assert new_patient_key, original_patient_key == ("2375458543", "123456")
+    assert get_md5(os.path.join(temp_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
+
+
+def test_process_dcm_dummy_group(temp_dir):
     new_patient_key, original_patient_key = process_dcm(
-        input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True
+        input_dir="tests/dummy_ex", output_dir=temp_dir, overwrite=True, group=True
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert get_md5(os.path.join(temp_output_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
+    assert get_md5(os.path.join(temp_dir, "group_UNK", "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
 
 
-def test_process_dcm_dummy_group(temp_output_dir):
+def test_process_dcm_dummy_mapping(temp_dir):
     new_patient_key, original_patient_key = process_dcm(
-        input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True, group=True
+        input_dir="tests/dummy_ex", output_dir=temp_dir, overwrite=True, mapping="tests/map.csv"
     )
     assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert (
-        get_md5(os.path.join(temp_output_dir, "group_UNK", "metadata.json"), bottom)
-        == "b1fb22938cd95348cbcb44a63ed34fcf"
-    )
-
-
-def test_process_dcm_dummy_mapping(temp_output_dir):
-    new_patient_key, original_patient_key = process_dcm(
-        input_dir="tests/dummy_ex", output_dir=temp_output_dir, overwrite=True, mapping="tests/map.csv"
-    )
-    assert new_patient_key, original_patient_key == ("2375458543", "123456")
-    assert get_md5(os.path.join(temp_output_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
+    assert get_md5(os.path.join(temp_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
 
 
 def test_delete_empty_folder(temp_directory):
@@ -381,3 +373,87 @@ def test_parallel_processing_mixed_structure(temp_directory: Path, n_jobs: int) 
     assert result is False, "Expected the top-level directory to not be deleted due to the presence of files"
     assert temp_directory.exists(), "Expected the top-level directory to still exist"
     assert (temp_directory / "file.txt").exists(), "Expected the file to still exist in the top-level directory"
+
+
+def test_check_metadata_exists_no_group(temp_directory: str):
+    """Test when group is False and metadata.json exists."""
+    metadata_path = os.path.join(temp_directory, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump({}, f)
+
+    result, path = check_metadata_exists(temp_directory, group=False)
+    assert result is True
+    assert path == temp_directory
+
+
+def test_check_metadata_exists_no_group_not_exists(temp_directory: str):
+    """Test when group is False and metadata.json doesn't exist."""
+    result, path = check_metadata_exists(temp_directory, group=False)
+    assert result is False
+    assert path == temp_directory
+
+
+def test_check_metadata_exists_group(temp_directory: str):
+    """Test when group is True and metadata.json exists in a group folder."""
+    group_dir = os.path.join(temp_directory, "group_1")
+    os.makedirs(group_dir)
+    metadata_path = os.path.join(group_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump({}, f)
+
+    result, path = check_metadata_exists(temp_directory, group=True)
+    assert result is True
+    assert path == group_dir
+
+
+def test_check_metadata_exists_group_not_exists(temp_directory: str):
+    """Test when group is True and metadata.json doesn't exist in any group folder."""
+    group_dir = temp_directory / "group_1"
+    os.makedirs(group_dir)
+
+    result, path = check_metadata_exists(temp_directory, group=True)
+    assert result is False
+    assert path == ""
+
+
+def test_check_metadata_exists_group_multiple(temp_directory: str):
+    """Test when group is True and metadata.json exists in multiple group folders."""
+    for i in range(1, 4):
+        group_dir = os.path.join(temp_directory, f"group_{i}")
+        os.makedirs(group_dir)
+        if i != 2:  # Skip group_2 to test it finds the first occurrence
+            metadata_path = os.path.join(group_dir, "metadata.json")
+            with open(metadata_path, "w") as f:
+                json.dump({}, f)
+
+    result, path = check_metadata_exists(temp_directory, group=True)
+    assert result is True
+    assert path == os.path.join(temp_directory, "group_1")
+
+
+def test_check_metadata_exists_non_group_folders(temp_directory: str):
+    """Test when there are non-group folders present."""
+    os.makedirs(os.path.join(temp_directory, "not_a_group"))
+    os.makedirs(os.path.join(temp_directory, "group_1"))
+
+    result, path = check_metadata_exists(temp_directory, group=True)
+    assert result is False
+
+
+def test_check_metadata_exists_empty_dir(temp_directory: str):
+    """Test with an empty directory for both group True and False."""
+    assert check_metadata_exists(temp_directory, group=False) == (False, temp_directory)
+    assert check_metadata_exists(temp_directory, group=True) == (False, "")
+
+
+def test_check_metadata_exists_case_sensitivity(temp_directory: str):
+    """Test case sensitivity of group folder names."""
+    group_dir = os.path.join(temp_directory, "GROUP_1")
+    os.makedirs(group_dir)
+    metadata_path = os.path.join(group_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump({}, f)
+
+    result, path = check_metadata_exists(temp_directory, group=True)
+    assert result is False
+    assert path == ""

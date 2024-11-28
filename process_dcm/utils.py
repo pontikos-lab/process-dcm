@@ -351,6 +351,22 @@ def process_dcm_images(dcm_objs: list, output_dir: str, image_format: str, mappi
     return process_dcm_meta(dcm_objs=dcm_objs, output_dir=output_dir, mapping=mapping, keep=keep)
 
 
+def check_metadata_exists(output_dir: str, group: bool) -> tuple[bool, str]:
+    """Check if metadata.json exists in the output directory or its group subfolders."""
+    metadata_path = ""
+    if group:
+        # Look for metadata.json in group_* subfolders
+        for subfolder in sorted(os.listdir(output_dir)):
+            if subfolder.startswith("group_"):
+                metadata_path = os.path.join(output_dir, subfolder, "metadata.json")
+                if os.path.exists(metadata_path):
+                    return True, os.path.dirname(metadata_path)
+        return False, os.path.dirname(metadata_path) if os.path.exists(metadata_path) else ""
+    else:
+        # Check for metadata.json in the output_dir
+        return os.path.exists(os.path.join(output_dir, "metadata.json")), output_dir
+
+
 def process_dcm(
     input_dir: str | Path,
     image_format: str = "png",
@@ -413,13 +429,13 @@ def process_dcm(
     else:
         if os.path.exists(output_dir):
             # Check if output_dir contains metadata.json and files with the specified image_format
-            has_metadata = os.path.exists(os.path.join(output_dir, "metadata.json"))
-            has_images = any(f.endswith(image_format) for f in os.listdir(output_dir))
+            has_metadata, opath = check_metadata_exists(output_dir, group)
+            has_images = any(f.endswith(image_format) for f in os.listdir(opath))
 
             if has_metadata and has_images:
                 if not quiet:
                     typer.secho(
-                        f"Output directory '{output_dir}' already exists with metadata and images. Skipping...",
+                        f"Output directory '{opath}' already exists with metadata and images. Skipping...",
                         fg="yellow",
                     )
                 return "", ""

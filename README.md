@@ -11,7 +11,7 @@
 
 ## About The Project
 
-Python library and app to extract images from DCM files with metadata in private-eye format
+Python library and app to extract images from DCM files with metadata in a JSON-based standard format
 
 ## Installation and Usage
 

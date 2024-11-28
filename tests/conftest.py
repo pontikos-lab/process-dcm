@@ -65,9 +65,15 @@ def runner():
 
 
 @pytest.fixture(scope="module")
-def temp_output_dir():
+def temp_dir():
     with tempfile.TemporaryDirectory() as temp_dir:
         yield temp_dir
+
+
+@pytest.fixture
+def temp_directory():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield Path(temp_dir)
 
 
 @pytest.fixture(scope="module")
@@ -243,9 +249,3 @@ def janitor() -> Generator[list[str], None, None]:
     to_delete: list[str] = []
     yield to_delete
     del_file_paths(to_delete)
-
-
-@pytest.fixture
-def temp_directory():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield Path(temp_dir)

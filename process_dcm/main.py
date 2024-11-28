@@ -137,14 +137,18 @@ def main(
 
     tasks = list(zip(subfolders, output_dirs))
 
-    def track_tasks(pool: Pool, tasks: list[tuple[str, str]], quiet: bool, total: int) -> Iterable[tuple[str, str]]:
+    def track_tasks(task_iterator: Iterable[tuple[str, str]], quiet: bool, total: int) -> Iterable[tuple[str, str]]:
         if quiet:
-            return pool.imap(task_processor, tasks)
+            return task_iterator
         else:
-            return track(pool.imap(task_processor, tasks), total=total, description="Processing DICOM files")
+            return track(task_iterator, total=total, description="Processing DICOM files")
 
-    with Pool(n_jobs) as pool:
-        results = list(track_tasks(pool, tasks, quiet, total=len_sf))
+    if n_jobs > 1:
+        with Pool(n_jobs) as pool:
+            results = list(track_tasks(pool.imap(task_processor, tasks), quiet, total=len_sf))
+    else:
+        # Run serially for easier debugging when n_jobs is 1
+        results = list(track_tasks(map(task_processor, tasks), quiet, total=len_sf))
 
     unique_sorted_results = sorted(set(results))  # (study_id, patient_id)
     dict_res = dict(unique_sorted_results)
