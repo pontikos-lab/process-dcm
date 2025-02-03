@@ -89,7 +89,7 @@ This Project depends on the [`poetry`](https://python-poetry.org/).
 
 ## Bumping Version
 
-We use `commitizen`. The instructions below are only for exceptional cases.
+We use [`commitizen`](https://github.com/commitizen-tools/commitizen), which follows [Conventional Commits](https://www.conventionalcommits.org/). The instructions below are only for exceptional cases.
 
 1. Using [poetry-bumpversion](https://github.com/monim67/poetry-bumpversion). Bump the version number by running `poetry version [part] [--dry-run]` where `[part]` is `major`, `minor`, or `patch`, depending on which part of the version number you want to bump.
 

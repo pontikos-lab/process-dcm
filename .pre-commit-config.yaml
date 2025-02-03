@@ -26,18 +26,18 @@ repos:
       - id: check-merge-conflict
       - id: check-docstring-first
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
+    rev: v0.9.4
     hooks:
       - id: ruff
         args: ["--fix"]
         files: ^hooks
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
+    rev: v0.9.4
     hooks:
       - id: ruff-format
         files: ^hooks
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.0.0
+    rev: v4.1.1
     hooks:
       - id: commitizen
         stages:
@@ -50,7 +50,7 @@ repos:
           - prettier
   # not for process_dcm
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+    rev: v1.14.1
     hooks:
       - id: mypy
         exclude: ^tests/
@@ -71,13 +71,7 @@ repos:
             "no-any-return",
           ]
   - repo: https://github.com/thoughtworks/talisman
-    rev: "v1.32.0" # Update me!
+    rev: "v1.32.0"
     hooks:
-      # both pre-commit and pre-push supported
-      # -   id: talisman-push
       - id: talisman-commit
         entry: cmd --githook pre-commit
-  # - repo: https://github.com/gitleaks/gitleaks
-  #   rev: v8.18.4
-  #   hooks:
-  #     - id: gitleaks

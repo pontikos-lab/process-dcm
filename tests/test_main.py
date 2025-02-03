@@ -59,9 +59,9 @@ def test_cli_without_args(runner):
 @pytest.mark.parametrize(
     "md5, meta, keep",
     [
-        (["5ba37cc43233db423394cf98c81d5fbc"], "27e4fa04ad730718b2509af36743c995", "pndg"),
-        (["5ba37cc43233db423394cf98c81d5fbc"], "3a15fdd18a67b3d4ce7be6164f58f073", "pnDg"),
-        (["5ba37cc43233db423394cf98c81d5fbc"], "ba5973bc8dd8e15aa6bef95bcd248fbf", ""),
+        (["a726b59587ca4ea1a478802e3ee9235c"], "27e4fa04ad730718b2509af36743c995", "pndg"),
+        (["a726b59587ca4ea1a478802e3ee9235c"], "3a15fdd18a67b3d4ce7be6164f58f073", "pnDg"),
+        (["a726b59587ca4ea1a478802e3ee9235c"], "ba5973bc8dd8e15aa6bef95bcd248fbf", ""),
     ],
 )
 def test_main(md5, meta, keep, janitor, runner):
@@ -103,7 +103,7 @@ def test_main_group(janitor, runner):
         of = sorted(output_dir.rglob("*.png"))
         assert len(tof) == 51
         assert get_md5(output_dir / "example-dcms/group_0/metadata.json", bottom) == "5387538e2f018288154ec2e98d4d29b1"
-        assert get_md5(of) in ["5ba37cc43233db423394cf98c81d5fbc"]
+        assert get_md5(of) in ["a726b59587ca4ea1a478802e3ee9235c"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         assert "example-dcms/group_0' already exists with metadata" in result.output
@@ -118,7 +118,7 @@ def test_main_dummy(janitor, runner):
     of = [x for x in tof if "metadata.json" not in x]
     assert len(tof) == 3
     assert get_md5("dummy_dir/dummy_ex/metadata.json", bottom) == "0693469a3fcf388d89627eb212ace2bc"
-    assert get_md5(of) in ["30b70623445f7c12d8ad773c9738c7ce"]
+    assert get_md5(of) in ["fb7c7e0fe4e7d3e89e0daae479d013c4"]
 
 
 def test_main_mapping(janitor, runner):
@@ -146,7 +146,7 @@ def test_main_mapping(janitor, runner):
         of = [x for x in tof if "metadata.json" not in x]
         assert len(tof) == 51
         assert get_md5(output_dir / "example-dcms/metadata.json", bottom) == "450e2e40d321a24219c1c9ec15b2c80e"
-        assert get_md5(of) in ["5ba37cc43233db423394cf98c81d5fbc"]
+        assert get_md5(of) in ["a726b59587ca4ea1a478802e3ee9235c"]
 
 
 def test_main_abort(runner):
