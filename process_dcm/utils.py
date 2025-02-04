@@ -351,7 +351,7 @@ def process_dcm_images(dcm_objs: list, output_dir: str, image_format: str, mappi
     return process_dcm_meta(dcm_objs=dcm_objs, output_dir=output_dir, mapping=mapping, keep=keep)
 
 
-def check_metadata_exists(output_dir: str, group: bool) -> tuple[bool, str]:
+def check_metadata_exists(output_dir: str | Path, group: bool) -> tuple[bool, str | Path]:
     """Check if metadata.json exists in the output directory or its group subfolders."""
     metadata_path = ""
     if group:
@@ -528,7 +528,7 @@ def find_dicom_folders_with_base(root_folder: str) -> tuple[int, str, list[str]]
     return len_ins, base_dir, natsorted(folders)
 
 
-def get_md5(file_path: Path | str | list[str], minus: int = 0) -> str:
+def get_md5(file_path: Path | str | list[str] | list[Path], minus: int = 0) -> str:
     """Calculate the MD5 checksum of a file or list of files, optionally suppressing lines from the bottom."""
     md5_hash = hashlib.md5()
 
@@ -553,11 +553,11 @@ def get_hash(value: str) -> str:
     return f"{int(hex_dig[:8], 16):010}"
 
 
-def get_versioned_filename(base_filename: str, version: int) -> str:
+def get_versioned_filename(base_filename: str | Path, version: int) -> str:
     """Generates a file name with a version suffix.
 
     Args:
-        base_filename (str): The base name of the file.
+        base_filename (str | Path): The base name of the file.
         version (int): The version number to append.
 
     Returns:
@@ -582,7 +582,7 @@ def save_to_temp_file(data: list[list[str]]) -> str:
     return temp_file.name
 
 
-def files_are_identical(file1: str, file2: str) -> bool:
+def files_are_identical(file1: str | Path, file2: str | Path) -> bool:
     """Checks if two files are identical.
 
     Args:
@@ -595,7 +595,7 @@ def files_are_identical(file1: str, file2: str) -> bool:
     return filecmp.cmp(file1, file2, shallow=False)
 
 
-def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, quiet: bool = False) -> None:
+def process_and_save_csv(unique_sorted_results: list, reserved_csv: str | Path, quiet: bool = False) -> None:
     """Processes unique sorted results and saves them to the reserved CSV file.
 
     If the content is identical to the existing file, it leaves the existing file unchanged.
@@ -604,7 +604,7 @@ def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, quiet: 
     Args:
         unique_sorted_results (list): The data to be written to the CSV file. Each sublist
                                       represents a row with 'study_id' and 'patient_id'.
-        reserved_csv (str): The path to the reserved CSV file.
+        reserved_csv (str | Path): The path to the reserved CSV file.
         quiet (bool, optional): Silence verbosity. Defaults to False.
     """
     temp_filename = save_to_temp_file(unique_sorted_results)
@@ -633,13 +633,13 @@ def process_and_save_csv(unique_sorted_results: list, reserved_csv: str, quiet: 
             typer.secho(f"Generated mapping saved to '{reserved_csv}'", fg="blue")
 
 
-def read_csv(file_path: str) -> list[list[str]]:
+def read_csv(file_path: str | Path) -> list[list[str]]:
     """Reads a CSV file and returns its contents as a list of rows.
 
     Each row is represented as a list of strings.
 
     Args:
-        file_path (str): The path to the CSV file to be read.
+        file_path (str|Path): The path to the CSV file to be read.
 
     Returns:
         list[list[str]]: A list of rows, where each row is a list of strings representing the CSV data.

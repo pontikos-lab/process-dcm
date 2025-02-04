@@ -16,11 +16,11 @@ from process_dcm.const import ImageModality
 bottom = 11
 
 
-def pytest_report_header():
+def pytest_report_header() -> str:
     return f">>>\tVersion: {version}\n"
 
 
-def remove_ansi_codes(text):
+def remove_ansi_codes(text: str) -> str:
     ansi_escape = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
     return ansi_escape.sub("", text)
 
@@ -60,34 +60,34 @@ def create_directory_structure(base_path: Path, structure: dict) -> None:
 
 
 @pytest.fixture(scope="module")
-def runner():
+def runner() -> CliRunner:
     return CliRunner()
 
 
 @pytest.fixture(scope="module")
-def temp_dir():
+def temp_dir() -> Generator[str, None, None]:
     with tempfile.TemporaryDirectory() as temp_dir:
         yield temp_dir
 
 
 @pytest.fixture
-def temp_directory():
+def temp_directory() -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory() as temp_dir:
         yield Path(temp_dir)
 
 
 @pytest.fixture(scope="module")
-def input_dir():
+def input_dir() -> Path:
     return Path("tests/example-dcms").resolve()
 
 
 @pytest.fixture(scope="module")
-def input_dir2():
+def input_dir2() -> Path:
     return Path("tests/example_dir/010-0001/20180724_L").resolve()
 
 
 @pytest.fixture
-def dicom_opotopol():
+def dicom_opotopol() -> FileDataset:
     """Fixture to create a mocked DICOM FileDataset for OPTOPOL."""
     # Create a FileMetaDataset instead of a defaultdict
     file_meta = FileMetaDataset()
@@ -126,7 +126,7 @@ def dicom_opotopol():
 
 
 @pytest.fixture
-def dicom_attribute_error():
+def dicom_attribute_error() -> FileDataset:
     """Fixture to create a mocked DICOM FileDataset for AttributeError simulation."""
     # Create a FileMetaDataset instead of a defaultdict
     file_meta = FileMetaDataset()
@@ -165,7 +165,7 @@ def dicom_attribute_error():
 
 
 @pytest.fixture
-def dicom_with_photo_locations():
+def dicom_with_photo_locations() -> FileDataset:
     """Fixture to create a mocked DICOM FileDataset for valid photo locations."""
     # Create a FileMetaDataset instead of a defaultdict
     file_meta = FileMetaDataset()
@@ -206,7 +206,7 @@ def dicom_with_photo_locations():
 
 
 @pytest.fixture
-def dicom_base():
+def dicom_base() -> FileDataset:
     """Base fixture for creating a mocked DICOM FileDataset."""
     # Create a FileMetaDataset instead of a defaultdict
     file_meta = FileMetaDataset()
@@ -229,7 +229,7 @@ def dicom_base():
 
 
 @pytest.fixture
-def csv_data():
+def csv_data() -> list[list[str]]:
     return [
         ["study_id_1", "patient_id_1"],
         ["study_id_2", "patient_id_2"],
@@ -237,7 +237,7 @@ def csv_data():
 
 
 @pytest.fixture
-def unique_sorted_results():
+def unique_sorted_results() -> list[list[str]]:
     return [
         ["study_id_3", "patient_id_3"],
         ["study_id_4", "patient_id_4"],

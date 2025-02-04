@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -56,9 +57,9 @@ def test_meta_images_with_photo_locations(dicom_with_photo_locations: FileDatase
     meta = meta_images(dicom_with_photo_locations)
 
     assert meta["modality"] == "OCT", "Modality extraction failed"
-    assert all(
-        "photo_locations" in content and len(content["photo_locations"]) == 1 for content in meta["contents"]
-    ), "Photo locations not found or incomplete in metadata"
+    assert all("photo_locations" in content and len(content["photo_locations"]) == 1 for content in meta["contents"]), (
+        "Photo locations not found or incomplete in metadata"
+    )
 
 
 def test_absolute_path_symlink() -> None:
@@ -101,7 +102,7 @@ def test_update_modality_opt(dicom_base: FileDataset) -> None:
     """Test updating modality when the modality is OPT."""
     dicom_base.Modality = "OPT"
     assert update_modality(dicom_base) is True
-    assert dicom_base.Modality == ImageModality.OCT  # type: ignore
+    assert dicom_base.Modality is ImageModality.OCT  # type: ignore
 
 
 def test_update_modality_op_topcon(dicom_base: FileDataset) -> None:
@@ -109,7 +110,7 @@ def test_update_modality_op_topcon(dicom_base: FileDataset) -> None:
     dicom_base.Modality = "OP"
     dicom_base.Manufacturer = "TOPCON"
     assert update_modality(dicom_base) is True
-    assert dicom_base.Modality == ImageModality.COLOUR_PHOTO
+    assert dicom_base.Modality is ImageModality.COLOUR_PHOTO  # type: ignore
 
 
 def test_update_modality_op_ir(dicom_base: FileDataset) -> None:
@@ -118,7 +119,7 @@ def test_update_modality_op_ir(dicom_base: FileDataset) -> None:
     dicom_base.Manufacturer = "Another Manufacturer"
     dicom_base.SeriesDescription = "SLO IR"
     assert update_modality(dicom_base) is True
-    assert dicom_base.Modality == ImageModality.SLO_INFRARED
+    assert dicom_base.Modality is ImageModality.SLO_INFRARED  # type: ignore
 
 
 def test_update_modality_unknown(dicom_base: FileDataset) -> None:
@@ -127,7 +128,7 @@ def test_update_modality_unknown(dicom_base: FileDataset) -> None:
     dicom_base.Manufacturer = "Unknown Manufacturer"
     dicom_base.SeriesDescription = "Unknown Description"
     assert update_modality(dicom_base) is True
-    assert dicom_base.Modality == ImageModality.UNKNOWN
+    assert dicom_base.Modality is ImageModality.UNKNOWN  # type: ignore
 
 
 def test_update_modality_unsupported(dicom_base: FileDataset) -> None:
@@ -156,7 +157,7 @@ def test_update_modality_op_various_descriptions(
     dicom_base.Modality = "OP"
     dicom_base.SeriesDescription = description
     assert update_modality(dicom_base) is True
-    assert dicom_base.Modality == expected_modality
+    assert dicom_base.Modality is expected_modality  # type: ignore
 
 
 def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base: FileDataset) -> None:
@@ -168,7 +169,7 @@ def test_process_dcm_meta_with_D_in_keep_and_mapping(dicom_base: FileDataset) ->
         assert rjson["patient"]["patient_key"] == "00123"
 
 
-def test_process_and_save_csv(csv_data, unique_sorted_results) -> None:
+def test_process_and_save_csv(csv_data: list[list[str]], unique_sorted_results: list[list[str]]) -> None:
     with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
@@ -192,7 +193,7 @@ def test_process_and_save_csv(csv_data, unique_sorted_results) -> None:
         assert backup_data == expected_backup_data, f"Expected {expected_backup_data}, but got {backup_data}"
 
 
-def test_process_and_save_csv_no_existing_file(unique_sorted_results):
+def test_process_and_save_csv_no_existing_file(unique_sorted_results: list[list[str]]) -> None:
     with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
@@ -205,7 +206,9 @@ def test_process_and_save_csv_no_existing_file(unique_sorted_results):
         assert created_data == expected_data, f"Expected {expected_data}, but got {created_data}"
 
 
-def test_process_and_save_csv_with_existing_file(csv_data, unique_sorted_results):
+def test_process_and_save_csv_with_existing_file(
+    csv_data: list[list[str]], unique_sorted_results: list[list[str]]
+) -> None:
     with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
         reserved_csv1 = get_versioned_filename(reserved_csv, 1)
@@ -231,7 +234,7 @@ def test_process_and_save_csv_with_existing_file(csv_data, unique_sorted_results
         assert backup_data == expected_backup_data, f"Expected {expected_backup_data}, but got {backup_data}"
 
 
-def test_process_and_save_csv_no_changes(csv_data):
+def test_process_and_save_csv_no_changes(csv_data: list[list[str]]) -> None:
     with TemporaryDirectory() as temp_dir:
         reserved_csv = Path(temp_dir) / "reserved.csv"
 
@@ -239,7 +242,7 @@ def test_process_and_save_csv_no_changes(csv_data):
         write_to_csv(reserved_csv, csv_data, header=["study_id", "patient_id"])
 
         # Process and save the same CSV data
-        process_and_save_csv(csv_data, reserved_csv)
+        process_and_save_csv(csv_data, reserved_csv.name)
 
         # Check if reserved CSV remains unchanged
         unchanged_data = read_csv(reserved_csv)
@@ -252,7 +255,7 @@ def test_process_and_save_csv_no_changes(csv_data):
 
 
 # skip this test for CI
-def test_process_dcm(temp_dir, input_dir2, mocker):
+def test_process_dcm(temp_dir: str, input_dir2: Path, mocker: Any) -> None:
     mock_secho = mocker.patch("typer.secho")
     new_patient_key, original_patient_key = process_dcm(input_dir=input_dir2, output_dir=temp_dir, overwrite=True)
     output_dir = Path(temp_dir)
@@ -269,43 +272,43 @@ def test_process_dcm(temp_dir, input_dir2, mocker):
     assert len(list(output_dir.glob("*.png"))) == len(output_files_initial)
 
 
-def test_process_dcm_dummy(temp_dir):
+def test_process_dcm_dummy(temp_dir: str) -> None:
     new_patient_key, original_patient_key = process_dcm(input_dir="tests/dummy_ex", output_dir=temp_dir, overwrite=True)
-    assert new_patient_key, original_patient_key == ("2375458543", "123456")
+    assert (new_patient_key, original_patient_key) == ("2375458543", "123456")
     assert get_md5(os.path.join(temp_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
 
 
-def test_process_dcm_dummy_group(temp_dir):
+def test_process_dcm_dummy_group(temp_dir: str) -> None:
     new_patient_key, original_patient_key = process_dcm(
         input_dir="tests/dummy_ex", output_dir=temp_dir, overwrite=True, group=True
     )
-    assert new_patient_key, original_patient_key == ("2375458543", "123456")
+    assert (new_patient_key, original_patient_key) == ("2375458543", "123456")
     assert get_md5(os.path.join(temp_dir, "group_UNK", "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
 
 
-def test_process_dcm_dummy_mapping(temp_dir):
+def test_process_dcm_dummy_mapping(temp_dir: str) -> None:
     new_patient_key, original_patient_key = process_dcm(
         input_dir="tests/dummy_ex", output_dir=temp_dir, overwrite=True, mapping="tests/map.csv"
     )
-    assert new_patient_key, original_patient_key == ("2375458543", "123456")
+    assert (new_patient_key, original_patient_key) == ("2375458543", "123456")
     assert get_md5(os.path.join(temp_dir, "metadata.json"), bottom) == "b1fb22938cd95348cbcb44a63ed34fcf"
 
 
-def test_delete_empty_folder(temp_directory):
+def test_delete_empty_folder(temp_directory: Path) -> None:
     empty_folder = temp_directory / "empty"
     empty_folder.mkdir()
     assert delete_if_empty(empty_folder)
     assert not empty_folder.exists()
 
 
-def test_delete_nested_empty_folders(temp_directory):
-    structure = {"parent": {"child1": {}, "child2": {"grandchild": {}}}}
+def test_delete_nested_empty_folders(temp_directory: Path) -> None:
+    structure: dict = {"parent": {"child1": {}, "child2": {"grandchild": {}}}}
     create_directory_structure(temp_directory, structure)
     assert delete_if_empty(temp_directory / "parent")
     assert not (temp_directory / "parent").exists()
 
 
-def test_non_empty_folder(temp_directory):
+def test_non_empty_folder(temp_directory: Path) -> None:
     structure = {"non_empty": {"file.txt": "content"}}
     create_directory_structure(temp_directory, structure)
     assert not delete_if_empty(temp_directory / "non_empty")
@@ -313,7 +316,7 @@ def test_non_empty_folder(temp_directory):
     assert (temp_directory / "non_empty" / "file.txt").exists()
 
 
-def test_mixed_structure(temp_directory):
+def test_mixed_structure(temp_directory: Path) -> None:
     structure = {"mixed": {"empty1": {}, "empty2": {}, "non_empty": {"file.txt": "content"}}}
     create_directory_structure(temp_directory, structure)
     assert not delete_if_empty(temp_directory / "mixed")
@@ -323,11 +326,11 @@ def test_mixed_structure(temp_directory):
     assert (temp_directory / "mixed" / "non_empty").exists()
 
 
-def test_non_existent_path():
+def test_non_existent_path() -> None:
     assert not delete_if_empty("/path/does/not/exist")
 
 
-def test_file_path(temp_directory):
+def test_file_path(temp_directory: Path) -> None:
     file_path = temp_directory / "file.txt"
     file_path.write_text("content")
     assert not delete_if_empty(file_path)
@@ -335,8 +338,8 @@ def test_file_path(temp_directory):
 
 
 @pytest.mark.parametrize("n_jobs", [2, 4, 8])
-def test_parallel_processing(temp_directory, n_jobs):
-    structure = {
+def test_parallel_processing(temp_directory: Path, n_jobs: int) -> None:
+    structure: dict = {
         "nested1": {
             "subnested1": {},  # An empty sub-subdirectory
             "subnested2": {},  # Another empty sub-subdirectory
@@ -375,7 +378,7 @@ def test_parallel_processing_mixed_structure(temp_directory: Path, n_jobs: int) 
     assert (temp_directory / "file.txt").exists(), "Expected the file to still exist in the top-level directory"
 
 
-def test_check_metadata_exists_no_group(temp_directory: str):
+def test_check_metadata_exists_no_group(temp_directory: str) -> None:
     """Test when group is False and metadata.json exists."""
     metadata_path = os.path.join(temp_directory, "metadata.json")
     with open(metadata_path, "w") as f:
@@ -386,14 +389,14 @@ def test_check_metadata_exists_no_group(temp_directory: str):
     assert path == temp_directory
 
 
-def test_check_metadata_exists_no_group_not_exists(temp_directory: str):
+def test_check_metadata_exists_no_group_not_exists(temp_directory: str) -> None:
     """Test when group is False and metadata.json doesn't exist."""
     result, path = check_metadata_exists(temp_directory, group=False)
     assert result is False
     assert path == temp_directory
 
 
-def test_check_metadata_exists_group(temp_directory: str):
+def test_check_metadata_exists_group(temp_directory: str) -> None:
     """Test when group is True and metadata.json exists in a group folder."""
     group_dir = os.path.join(temp_directory, "group_1")
     os.makedirs(group_dir)
@@ -406,7 +409,7 @@ def test_check_metadata_exists_group(temp_directory: str):
     assert path == group_dir
 
 
-def test_check_metadata_exists_group_not_exists(temp_directory: str):
+def test_check_metadata_exists_group_not_exists(temp_directory: Path) -> None:
     """Test when group is True and metadata.json doesn't exist in any group folder."""
     group_dir = temp_directory / "group_1"
     os.makedirs(group_dir)
@@ -416,7 +419,7 @@ def test_check_metadata_exists_group_not_exists(temp_directory: str):
     assert path == ""
 
 
-def test_check_metadata_exists_group_multiple(temp_directory: str):
+def test_check_metadata_exists_group_multiple(temp_directory: str) -> None:
     """Test when group is True and metadata.json exists in multiple group folders."""
     for i in range(1, 4):
         group_dir = os.path.join(temp_directory, f"group_{i}")
@@ -431,7 +434,7 @@ def test_check_metadata_exists_group_multiple(temp_directory: str):
     assert path == os.path.join(temp_directory, "group_1")
 
 
-def test_check_metadata_exists_non_group_folders(temp_directory: str):
+def test_check_metadata_exists_non_group_folders(temp_directory: str) -> None:
     """Test when there are non-group folders present."""
     os.makedirs(os.path.join(temp_directory, "not_a_group"))
     os.makedirs(os.path.join(temp_directory, "group_1"))
@@ -440,13 +443,13 @@ def test_check_metadata_exists_non_group_folders(temp_directory: str):
     assert result is False
 
 
-def test_check_metadata_exists_empty_dir(temp_directory: str):
+def test_check_metadata_exists_empty_dir(temp_directory: str) -> None:
     """Test with an empty directory for both group True and False."""
     assert check_metadata_exists(temp_directory, group=False) == (False, temp_directory)
     assert check_metadata_exists(temp_directory, group=True) == (False, "")
 
 
-def test_check_metadata_exists_case_sensitivity(temp_directory: str):
+def test_check_metadata_exists_case_sensitivity(temp_directory: str) -> None:
     """Test case sensitivity of group folder names."""
     group_dir = os.path.join(temp_directory, "GROUP_1")
     os.makedirs(group_dir)
