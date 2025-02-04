@@ -23,6 +23,7 @@ from process_dcm.utils import (
     process_dcm_meta,
     read_csv,
     set_output_dir,
+    tree,
     update_modality,
     write_to_csv,
 )
@@ -319,7 +320,11 @@ def test_non_empty_folder(temp_directory: Path) -> None:
 def test_mixed_structure(temp_directory: Path) -> None:
     structure = {"mixed": {"empty1": {}, "empty2": {}, "non_empty": {"file.txt": "content"}}}
     create_directory_structure(temp_directory, structure)
+    tree1 = tree(temp_directory)
+    assert tree1 == "mixed\n    └── empty1\n    └── empty2\n    └── non_empty\n        └── file.txt\n"
     assert not delete_if_empty(temp_directory / "mixed")
+    tree2 = tree(temp_directory)
+    assert tree2 == "mixed\n    └── non_empty\n        └── file.txt\n"
     assert (temp_directory / "mixed").exists()
     assert not (temp_directory / "mixed" / "empty1").exists()
     assert not (temp_directory / "mixed" / "empty2").exists()

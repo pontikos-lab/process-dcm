@@ -723,3 +723,23 @@ def delete_if_empty(folder_path: str | Path, n_jobs: int = 1) -> bool:
         return process_folder(path)
 
     return False
+
+
+def tree(directory: str | Path, indent: str = "", prefix: str = "") -> str:
+    """Recursively returns the directory structure similar to the 'tree' command."""
+    result = ""
+    if not os.path.isdir(directory):
+        return f"Error: '{directory}' is not a valid directory."
+
+    entries = sorted(os.listdir(directory))
+    for i, entry in enumerate(entries):
+        path = os.path.join(directory, entry)
+        is_last = i == len(entries) - 1  # Check if it's the last item
+        line = indent + prefix + entry + "\n"
+        result += line
+        if os.path.isdir(path):
+            new_indent = indent + ("    " if is_last else "│   ")
+            subtree = tree(path, new_indent, "└── " if is_last else "├── ")
+            result += subtree
+
+    return result
