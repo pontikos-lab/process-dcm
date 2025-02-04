@@ -1,6 +1,6 @@
 [project]
 name = "process-dcm"
-version = "0.4.9"
+version = "0.5.0"
 description = "Python library and app to extract images from DCM in a JSON-based standard format"
 authors = [
     { name = "Alan Silva", email = "3899850+alanwilter@users.noreply.github.com" },

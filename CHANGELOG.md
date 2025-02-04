@@ -1,3 +1,9 @@
+## v0.5.0 (2025-02-04)
+
+### Feat
+
+- add OPTOS_FA modality and corresponding test case
+
 ## v0.4.9 (2025-02-04)
 
 ### Fix
