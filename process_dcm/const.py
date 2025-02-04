@@ -76,6 +76,8 @@ class ImageModality(Enum):
         ModalityFlag.IS_2D_IMAGE | ModalityFlag.IS_INTERIOR | ModalityFlag.IS_COLOUR,
     )
 
+    OPTOS_FA = ("OPTOS_FA", "Optos Ultra-Widefield FA", ModalityFlag.IS_2D_IMAGE | ModalityFlag.IS_INTERIOR)
+
     # VF-related modalities
     FDF = ("FDF", "Flicker Defined Form Perimetry")
     SAP = ("SAP", "Standard Automated Perimetry")

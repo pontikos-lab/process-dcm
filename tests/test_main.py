@@ -217,6 +217,21 @@ def test_main_mapping_example_dir_relative(janitor: list[str], runner: CliRunner
     assert get_md5(path2 / "20180926_R/dummy/metadata.json", bottom) == "b9ff35a765db6b1eaeac4253c93a6044"
 
 
+def test_main_optos_fa(janitor: list[str], runner: CliRunner) -> None:
+    janitor.append("study_2_patient.csv")
+    janitor.append("study_2_patient_1.csv")
+    janitor.append("study_2_patient_2.csv")
+    with TemporaryDirectory() as tmpdirname:
+        output_dir = Path(tmpdirname)
+        input_dir = "tests/optos_fa/"
+        args = [input_dir, "-o", str(tmpdirname), "-j", "1", "-k", "pndg"]
+        result = runner.invoke(app, args)
+        assert result.exit_code == 0
+        of = sorted(glob(f"{output_dir}/**/*"))
+        assert len(of) == 2
+        assert get_md5(output_dir / "optos_fa/metadata.json", bottom) == "c06aa3640bbfb6325700bd6a52ee8929"
+
+
 def test_process_task() -> None:
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)

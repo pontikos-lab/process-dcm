@@ -259,8 +259,13 @@ def update_modality(dcm: FileDataset) -> bool:
     elif dcm.Modality == "OP":
         if dcm.Manufacturer.upper() == "TOPCON":
             dcm.Modality = ImageModality.COLOUR_PHOTO
-        elif dcm.Manufacturer.upper() == "OPTOS" and dcm.HorizontalFieldOfView == 200:
-            dcm.Modality = ImageModality.PSEUDOCOLOUR_ULTRAWIDEFIELD
+        elif dcm.Manufacturer.upper() == "OPTOS":
+            if dcm.get("HorizontalFieldOfView", 0) == 200:
+                dcm.Modality = ImageModality.PSEUDOCOLOUR_ULTRAWIDEFIELD
+            elif "FA " in dcm.get("SeriesDescription", "") and any(
+                "Fluorescein" in str(item) for item in dcm.get("ContrastBolusAgentSequence", [])
+            ):
+                dcm.Modality = ImageModality.OPTOS_FA
         elif " IR" in dcm.get("SeriesDescription", ""):
             dcm.Modality = ImageModality.SLO_INFRARED
         elif " BAF " in dcm.get("SeriesDescription", ""):
