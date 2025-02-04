@@ -12,6 +12,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
+from threading import Lock
 
 import cv2
 import numpy as np
@@ -686,6 +687,8 @@ def delete_if_empty(folder_path: str | Path, n_jobs: int = 1) -> bool:
     if not path.is_dir():
         return False
 
+    lock = Lock()
+
     def process_folder(folder: Path) -> bool:
         is_empty = True
         for item in folder.iterdir():
@@ -698,7 +701,12 @@ def delete_if_empty(folder_path: str | Path, n_jobs: int = 1) -> bool:
                     break
 
         if is_empty:
-            folder.rmdir()
+            with lock:
+                try:
+                    folder.rmdir()
+                except FileNotFoundError:
+                    pass
+
         return is_empty
 
     if n_jobs > 1:
@@ -707,9 +715,10 @@ def delete_if_empty(folder_path: str | Path, n_jobs: int = 1) -> bool:
             results = [future.result() for future in as_completed(futures)]
 
             # Check if all subfolders were empty and deleted
-            if all(results) and not any(path.glob("*")):
-                path.rmdir()
-                return True
+            with lock:
+                if all(results) and not any(path.glob("*")):
+                    path.rmdir()
+                    return True
     else:
         return process_folder(path)
 
