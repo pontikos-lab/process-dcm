@@ -322,7 +322,7 @@ def test_mixed_structure(temp_directory: Path) -> None:
     create_directory_structure(temp_directory, structure)
     tree1 = tree(temp_directory)
     assert tree1 == "mixed\n    └── empty1\n    └── empty2\n    └── non_empty\n        └── file.txt\n"
-    assert not delete_if_empty(temp_directory / "mixed")
+    assert not delete_if_empty(temp_directory / "mixed", n_jobs=2)
     tree2 = tree(temp_directory)
     assert tree2 == "mixed\n    └── non_empty\n        └── file.txt\n"
     assert (temp_directory / "mixed").exists()
