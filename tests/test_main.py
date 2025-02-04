@@ -138,8 +138,6 @@ def test_main_dummy(janitor: list[str], runner: CliRunner) -> None:
     tof = sorted(glob("dummy_dir/**/*"))
     of = [x for x in tof if "metadata.json" not in x]
     assert len(tof) == 3
-    aa = open("dummy_dir/dummy_ex/metadata.json").read()
-    assert aa == "abc"
     assert get_md5("dummy_dir/dummy_ex/metadata.json", bottom) == "0693469a3fcf388d89627eb212ace2bc"
     assert get_md5(of) in ["30b70623445f7c12d8ad773c9738c7ce", "fb7c7e0fe4e7d3e89e0daae479d013c4"]
 

@@ -401,7 +401,7 @@ def process_dcm(
     # Load DICOM files from input directory
     dcm_objs = [
         DcmO(dcmread(os.path.join(input_dir, f)), os.path.join(input_dir, f))
-        for f in os.listdir(input_dir)
+        for f in sorted(os.listdir(input_dir))
         if f.endswith(".dcm")
     ]
 
