@@ -1,3 +1,12 @@
+## v0.4.9 (2025-02-04)
+
+### Fix
+
+- update version provider from poetry to pep621 in pyproject.toml
+- add thread safety to folder deletion process
+- sort DICOM files when loading from input directory
+- fix typings
+
 ## v0.4.8 (2024-11-28)
 
 ### Fix
