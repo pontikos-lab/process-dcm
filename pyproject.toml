@@ -81,14 +81,14 @@ convention = "google"
 
 [tool.mypy]
 python_version = "3.10"
-exclude = 'tests/'
+# exclude = 'tests/'
 strict = true
 disable_error_code = ["type-arg"]
 
 # NOTE: uncomment these lines and edit accordingly if you have modules still without typings
-# [[tool.mypy.overrides]]
-# module = ["sklearn.*",]
-# ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["pytest_mock.*"]
+ignore_missing_imports = true
 
 [tool.commitizen]
 name = "cz_conventional_commits"

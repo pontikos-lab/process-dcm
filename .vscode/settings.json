@@ -10,6 +10,12 @@
     "**/node_modules/*/**": true,
     "**/.mypy_cache/*/**": true
   },
+  "mypy-type-checker.args": [
+    "--config-file=${workspaceFolder}/pyproject.toml"
+  ],
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "mypy-type-checker.preferDaemon": true,
+  "mypy-type-checker.reportingScope": "workspace",
   "python.envFile": "${workspaceFolder}/.env",
   "python.testing.pytestArgs": [
     "tests",
