@@ -1,3 +1,9 @@
+## v0.6.1 (2025-03-12)
+
+### Refactor
+
+- add type hints to test functions in test_const.py
+
 ## v0.6.0 (2025-03-12)
 
 ### Feat
