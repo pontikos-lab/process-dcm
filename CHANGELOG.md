@@ -1,3 +1,9 @@
+## v0.6.0 (2025-03-12)
+
+### Feat
+
+- enhance DICOM processing by filtering out empty modalities and improving file type checks
+
 ## v0.5.0 (2025-02-04)
 
 ### Feat
