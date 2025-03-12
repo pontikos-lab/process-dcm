@@ -1,4 +1,4 @@
 fileignoreconfig:
-  - filename: tests/test_main.py
-    checksum: a2a550325ff0788f928dfe0e37be1297d6c2266c0ad6a5f425824011c5374f17
+  - filename: process_dcm/utils.py
+    checksum: 23fd07377e9a52d1f58fe9493c0ac5317bc3cee389d081f91e74aafdeea63a74
 version: ""

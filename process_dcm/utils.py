@@ -254,7 +254,9 @@ def update_modality(dcm: FileDataset) -> bool:
     Returns:
         bool: True if modality is updated; False if the modality is unsupported.
     """
-    if dcm.Modality == "OPT":
+    if dcm.get("Modality") is None:
+        return False  # No modality, continue
+    elif dcm.Modality == "OPT":
         dcm.Modality = ImageModality.OCT
     elif dcm.Modality == "OP":
         if dcm.Manufacturer.upper() == "TOPCON":
@@ -404,15 +406,20 @@ def process_dcm(
     Returns:
         tuple[str, str]: A tuple containing the new patient key and the original patient key.
     """
+    new, old = "", ""
     # Load DICOM files from input directory
-    dcm_objs = [
+    tmp_dcm_objs = [
         DcmO(dcmread(os.path.join(input_dir, f)), os.path.join(input_dir, f))
-        for f in sorted(os.listdir(input_dir))
-        if f.endswith(".dcm")
+        for f in natsorted(os.listdir(input_dir))
+        if is_dicom_file(os.path.join(input_dir, f))
     ]
+    dcm_objs = [dcmO for dcmO in tmp_dcm_objs if dcmO.dcm_obj.get("Modality")]
 
-    dcm_objs.sort(key=lambda dcmO: dcmO.dcm_obj.Modality)
-    patient_id = dcm_objs[0].dcm_obj.PatientID
+    if not dcm_objs:
+        return "", ""
+
+    dcm_objs.sort(key=lambda dcmO: dcmO.dcm_obj.get("Modality"))
+    patient_id = dcm_objs[0].dcm_obj.get("PatientID", "")
 
     keep_patient_key = "p" in keep
     org_output_dir = output_dir
@@ -497,10 +504,20 @@ def process_dcm(
 process_dcm.__doc__ = process_dcm.__doc__.format(RESERVED_CSV=RESERVED_CSV) if process_dcm.__doc__ else None
 
 
+def is_dicom_file(filepath: str | Path) -> bool:
+    """Check if it's a DICOM file."""
+    try:
+        dcmread(filepath, stop_before_pixels=True)
+        return True
+    except Exception:
+        return False
+
+
 def find_dicom_folders_with_base(root_folder: str) -> tuple[int, str, list[str]]:
-    """Finds all unique subfolders within the root folder that contain at least one DICOM (.dcm) file.
+    """Finds all unique subfolders within the root folder that contain at least one DICOM file.
 
     It also returns the common base directory and the number of found subfolders.
+    This function uses pydicom to identify DICOM files instead of relying on file extensions.
 
     Args:
         root_folder (str): The path to the root folder to search for subfolders containing DICOM files.
@@ -516,8 +533,8 @@ def find_dicom_folders_with_base(root_folder: str) -> tuple[int, str, list[str]]
     """
     unique_subfolders = set()
     for dirpath, _, filenames in os.walk(root_folder):
-        if any(filename.lower().endswith(".dcm") for filename in filenames):
-            unique_subfolders.add(dirpath)  # Add the full path of subfolders containing DCM files
+        if any(is_dicom_file(os.path.join(dirpath, filename)) for filename in filenames):
+            unique_subfolders.add(dirpath)  # Add the full path of subfolders containing DICOM files
 
     folders = list(unique_subfolders)
     len_ins = len(folders)

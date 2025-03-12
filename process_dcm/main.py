@@ -150,7 +150,7 @@ def main(
         # Run serially for easier debugging when n_jobs is 1
         results = list(track_tasks(map(task_processor, tasks), quiet, total=len_sf))
 
-    unique_sorted_results = sorted(set(results))  # (study_id, patient_id)
+    unique_sorted_results = sorted([x for x in set(results) if x != ("", "")])  # (study_id, patient_id)
     dict_res = dict(unique_sorted_results)
 
     delete_if_empty(output_dir, n_jobs=n_jobs)
