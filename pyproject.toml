@@ -77,7 +77,6 @@ convention = "google"
 "__main__.py" = ["D100"]
 "__init__.py" = ["D104"]
 
-
 [tool.mypy]
 python_version = "3.10"
 # exclude = 'tests/'
