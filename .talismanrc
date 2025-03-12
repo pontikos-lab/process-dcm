@@ -1,4 +1,4 @@
 fileignoreconfig:
-  - filename: process_dcm/utils.py
-    checksum: 23fd07377e9a52d1f58fe9493c0ac5317bc3cee389d081f91e74aafdeea63a74
+  - filename: poetry.lock
+    checksum: 1dd0dd7ee6d2018db2dcaaad24e91cc7bd5e34b3952045f6d4c006b10fcb80ea
 version: ""
