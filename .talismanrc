@@ -1,6 +1,6 @@
 fileignoreconfig:
-  - filename: process_dcm/main.py
-    checksum: 4ee27daef1478d3f20469c384844155f21863de0d209e520e004d78b4252dd12
-  - filename: process_dcm/utils.py
-    checksum: f877429da70309a423920f251f26966a7f67e28c84a0ce08854d1f3ab2dffd36
+  - filename: tests/test_utils.py
+    checksum: 10a9b113e1d2c3b12299eecd0e516e9dc4d4cdf495c14c992e58c89839e3a07a
+  - filename: tests/test_main.py
+    checksum: 0f0132e33aaccbd2813ffe5fbb03f5e2363d0095ad66388c428b860c93a6f047
 version: ""
