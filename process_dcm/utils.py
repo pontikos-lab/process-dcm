@@ -21,20 +21,29 @@ from natsort import natsorted
 from PIL import Image
 from pydicom.dataset import FileDataset
 from pydicom.filereader import dcmread
+from pydicom.fileset import FileSet
 
 from process_dcm import __version__
 from process_dcm.const import RESERVED_CSV, ImageModality
 
 warnings.filterwarnings("ignore", category=UserWarning, message="A value of type *")
 
+dict_eye = {"R": "OD", "L": "OS"}
+
 
 class DcmO:
     """Class to handle DCM obj and its original file path."""
 
-    def __init__(self, dcm_obj: FileDataset, filepath: str) -> None:
+    def __init__(self, dcm_obj: FileDataset, filepath: Path) -> None:
         """Initialize DcmO with a DICOM object and its file path."""
         self.dcm_obj = dcm_obj
         self.filepath = filepath
+
+
+def _check_metadata_exists(output_dir: Path) -> bool:
+    """Check if metadata.json exists in the output directory."""
+    meta_path = output_dir / "metadata.json"
+    return meta_path.exists()
 
 
 def do_date(date_str: str, input_format: str, output_format: str) -> str:
@@ -139,25 +148,20 @@ def meta_images(dcm_obj: FileDataset) -> dict:
     return meta
 
 
-def process_dcm_meta(
-    dcm_objs: list[FileDataset], output_dir: str, mapping: str = "", keep: str = ""
-) -> tuple[str, str]:
+def process_dcm_meta(dcm_objs: list[FileDataset], output_dir: Path, mapping: str = "", keep: str = "") -> None:
     """Extract and save metadata from a list of DICOM files into a JSON file.
 
     Args:
         dcm_objs (list[FileDataset]): A list of FileDataset objects representing the DICOM files.
-        output_dir (str): The directory where the metadata JSON file will be saved.
+        output_dir (Path): The directory where the metadata JSON file will be saved.
         mapping (str, optional): Path to the CSV file containing patient ID to study ID mapping.
-                                 If not provided and patient_id is not anonymized,
+                                 If not provided and patient_id is anonymized,
                                  a '{RESERVED_CSV}' file will be generated.
         keep (str, optional): String containing the letters indicating which fields to keep.
                               Options: 'p' for patient key, 'n' for patient names, 'd' for precise date of birth,
                               'D' for anonymized date of birth (year only), and 'g' for gender. Defaults to "".
-
-    Returns:
-        tuple[str, str]: A tuple containing the new patient key and the original patient key.
     """
-    meta_file = os.path.join(output_dir, "metadata.json")
+    meta_file = output_dir / "metadata.json"
     metadata: dict = defaultdict(dict)
     metadata["patient"] = {}
     metadata["exam"] = {}
@@ -168,25 +172,19 @@ def process_dcm_meta(
 
     keep_gender = "g" in keep
     keep_names = "n" in keep
-    keep_patient_key = "p" in keep
-
-    # Read the mapping file if provided
-    patient_to_study = {}
-    if mapping:
-        patient_to_study = dict(read_csv(mapping))
-
-    original_patient_key = ""
-    new_patient_key = ""
+    anon_pat_key = "p" not in keep
+    study_2_patient = {}
+    if anon_pat_key:
+        if mapping:
+            study_2_patient = dict(read_csv(mapping))
+            anon_pat_key = False
 
     for dcm_obj in dcm_objs:
         patient_key = dcm_obj.get("PatientID", "")
-        original_patient_key = patient_key
-        if patient_key in patient_to_study:
-            patient_key = patient_to_study[patient_key]
-        elif not keep_patient_key:
+        if patient_key in study_2_patient:
+            patient_key = study_2_patient[patient_key]
+        elif anon_pat_key:
             patient_key = get_hash(patient_key)
-
-        new_patient_key = patient_key
 
         first_name = dcm_obj.get("PatientName.name_prefix")
         last_name = dcm_obj.get("PatientName.name_suffix")
@@ -210,7 +208,7 @@ def process_dcm_meta(
         metadata["patient"]["last_name"] = last_name
         metadata["patient"]["date_of_birth"] = date_of_birth
         metadata["patient"]["gender"] = gender
-        metadata["patient"]["source_id"] = dcm_obj.get("StudyInstanceUID")
+        metadata["patient"]["source_id"] = dcm_obj.get("FrameOfReferenceUID")
 
         metadata["exam"]["manufacturer"] = dcm_obj.get("Manufacturer")
         metadata["exam"]["scan_datetime"] = do_date(
@@ -220,7 +218,7 @@ def process_dcm_meta(
         metadata["exam"]["scanner_serial_number"] = dcm_obj.get("DeviceSerialNumber")
         metadata["exam"]["scanner_software_version"] = str(dcm_obj.get("SoftwareVersions"))
         metadata["exam"]["scanner_last_calibration_date"] = ""
-        metadata["exam"]["source_id"] = dcm_obj.get("StudyInstanceUID")
+        metadata["exam"]["source_id"] = dcm_obj.get("FrameOfReferenceUID")
 
         metadata["series"]["laterality"] = dcm_obj.get("ImageLaterality", dcm_obj.get("Laterality"))
         metadata["series"]["fixation"] = ""
@@ -229,15 +227,13 @@ def process_dcm_meta(
             metadata["series"]["fixation"] = dcm_obj.get("AnatomicRegionSequence")[0].get("CodeMeaning")
         metadata["series"]["anterior"] = ""  # bool
         metadata["series"]["protocol"] = dcm_obj.get("SeriesDescription")  # Guessing, "Rectangular volume"
-        metadata["series"]["source_id"] = dcm_obj.get("StudyInstanceUID")
+        metadata["series"]["source_id"] = dcm_obj.get("FrameOfReferenceUID")
         metadata["images"]["images"].append(meta_images(dcm_obj))
     if len(dcm_objs) > 1:
         metadata["series"]["protocol"] = "OCT ART Volume"
 
     with open(meta_file, "w") as f:
         json.dump(metadata, f, indent=4)
-
-    return (new_patient_key, original_patient_key)
 
 
 process_dcm_meta.__doc__ = (
@@ -292,7 +288,7 @@ def update_modality(dcm: FileDataset) -> bool:
     return True  # Modality updated successfully
 
 
-def group_dcms_by_acquisition_time(dcms: list[FileDataset], tol: int = 2) -> dict[str, list[FileDataset]]:
+def group_dcms_by_acquisition_time(dcms: list[FileDataset], tol: float = 2) -> dict[str, list[FileDataset]]:
     """Group DICOM files by AcquisitionDateTime within the specified tolerance.
 
     Args:
@@ -336,168 +332,215 @@ def group_dcms_by_acquisition_time(dcms: list[FileDataset], tol: int = 2) -> dic
     return grouped_dcms
 
 
-def process_dcm_images(dcm_objs: list, output_dir: str, image_format: str, mapping: str, keep: str) -> tuple[str, str]:
+def process_dcm_images(
+    dcm_objs: list[FileDataset],
+    output_dir: Path,
+    image_format: str,
+    mapping: str,
+    keep: str,
+    overwrite: bool = False,
+    quiet: bool = False,
+    time_group: bool = False,
+) -> str:
     """Processes DICOM images and saves them to a directory."""
-    os.makedirs(output_dir, exist_ok=True)
+    d0 = dcm_objs[0]
+    date_tag = do_date(d0.get("AcquisitionDateTime", "00000000"), "%Y%m%d%H%M%S.%f", "%Y%m%d_%H%M%S")
+    if not time_group:
+        ref = hex_hash(d0.get("FrameOfReferenceUID", "0"))
+        date_tag = f"{do_date(d0.get('AcquisitionDateTime', '00000000'), '%Y%m%d%H%M%S.%f', '%Y%m%d_%H%M%S')}_{ref}"
+    lat = dict_eye.get(d0.get("ImageLaterality", d0.get("Laterality")), "OU")
+    target_dir = output_dir / f"{d0.PatientID}_{date_tag}_{lat}_{d0.Modality.code}"
+
+    if overwrite:
+        shutil.rmtree(target_dir, ignore_errors=True)
+    else:
+        if target_dir.exists():
+            # Check if output_dir contains metadata.json and files with the specified image_format
+            has_metadata = _check_metadata_exists(target_dir)
+            has_images = any(f.endswith(image_format) for f in os.listdir(target_dir))
+
+            if has_metadata and has_images:
+                if not quiet:
+                    typer.secho(
+                        f"Output directory '{target_dir}' already exists with metadata and images. Skipping...",
+                        fg="yellow",
+                    )
+                return "skipped"
+
+    os.makedirs(target_dir, exist_ok=True)
 
     for dcmO in dcm_objs:
-        # process images
         arr = dcmO.pixel_array
 
         if dcmO.NumberOfFrames == 1:
             arr = np.expand_dims(arr, axis=0)
 
         for i in range(dcmO.NumberOfFrames):
-            out_img = os.path.join(output_dir, f"{dcmO.Modality.code}-{dcmO.AccessionNumber}_{i}.{image_format}")
+            out_img = os.path.join(target_dir, f"{dcmO.Modality.code}-{dcmO.AccessionNumber}_{i}.{image_format}")
             while os.path.exists(out_img):
                 dcmO.AccessionNumber += 1  # increase group_id
-                out_img = os.path.join(output_dir, f"{dcmO.Modality.code}-{dcmO.AccessionNumber}_{i}.{image_format}")
+                out_img = os.path.join(target_dir, f"{dcmO.Modality.code}-{dcmO.AccessionNumber}_{i}.{image_format}")
 
             array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
             image = Image.fromarray(array)
             image.save(out_img)
-    return process_dcm_meta(dcm_objs=dcm_objs, output_dir=output_dir, mapping=mapping, keep=keep)
+    process_dcm_meta(dcm_objs=dcm_objs, output_dir=target_dir, mapping=mapping, keep=keep)
+    return "processed"
 
 
-def check_metadata_exists(output_dir: str | Path, group: bool) -> tuple[bool, str | Path]:
-    """Check if metadata.json exists in the output directory or its group subfolders."""
-    metadata_path = ""
-    if group:
-        # Look for metadata.json in group_* subfolders
-        for subfolder in sorted(os.listdir(output_dir)):
-            if subfolder.startswith("group_"):
-                metadata_path = os.path.join(output_dir, subfolder, "metadata.json")
-                if os.path.exists(metadata_path):
-                    return True, os.path.dirname(metadata_path)
-        return False, os.path.dirname(metadata_path) if os.path.exists(metadata_path) else ""
-    else:
-        # Check for metadata.json in the output_dir
-        return os.path.exists(os.path.join(output_dir, "metadata.json")), output_dir
+def group_dcms_by_frame_reference(dcms: list[FileDataset]) -> dict[str, list[FileDataset]]:
+    """Group DICOM files by FrameOfReferenceUID.
+
+    Args:
+        dcms: List of DICOM FileDataset objects.
+
+    Returns:
+        Dictionary of grouped DICOM files, keyed by FrameOfReferenceUID.
+    """
+    grouped_dcms: dict[str, list[FileDataset]] = defaultdict(list)
+
+    for dcm in dcms:
+        frame_ref_uid = dcm.get("FrameOfReferenceUID", "unknown")
+        grouped_dcms[frame_ref_uid].append(dcm)
+
+    return grouped_dcms
 
 
 def process_dcm(
-    input_dir: str | Path,
+    input_dir: Path,
     image_format: str = "png",
-    output_dir: str = "exported_data",
+    output_dir: Path = Path("exported_data"),
     mapping: str = "",
     keep: str = "",
     overwrite: bool = False,
     quiet: bool = False,
-    group: bool = False,
-    tol: int = 2,
-) -> tuple[str, str]:
+    time_group: bool = False,
+    tol: float = 2,
+) -> tuple[int, int, list[str, str]]:
     """Process DICOM files from the input directory and save images in the specified format.
 
     Args:
-        input_dir (str | Path): Path to the directory containing DICOM files.
+        input_dir (Path): Path to the directory containing DICOM files.
         image_format (str, optional): The format in which to save the images. Defaults to "png".
-        output_dir (str, optional): Path to the directory where images will be saved. Defaults to "exported_data".
+        output_dir (Path, optional): Path to the directory where images will be saved. Defaults to "exported_data".
         mapping (str, optional): Path to the CSV file containing patient ID to study ID mapping.
-                                 If not provided and patient_id is not anonymized,
+                                 If not provided and patient_id is anonymized,
                                  a '{RESERVED_CSV}' file will be generated.
         keep (str, optional): String containing the letters indicating which fields to keep.
                               Options: 'p' for patient key, 'n' for patient names, 'd' for precise date of birth,
                               'D' for anonymized date of birth (year only), and 'g' for gender. Defaults to "".
         overwrite (bool, optional): Whether to overwrite existing files in the output directory. Defaults to False.
         quiet (bool, optional): Silence verbosity. Defaults to False.
-        group (bool, optional): Whether to re-group DICOM files by AcquisitionDateTime. Defaults to False.
+        time_group (bool, optional): Whether to re-group DICOM files by AcquisitionDateTime. Defaults to False.
         tol (int, optional): Tolerance in seconds for grouping DICOM files by AcquisitionDateTime. Defaults to 2.
 
     Returns:
         tuple[str, str]: A tuple containing the new patient key and the original patient key.
     """
-    new, old = "", ""
-    # Load DICOM files from input directory
-    tmp_dcm_objs = [
-        DcmO(dcmread(os.path.join(input_dir, f)), os.path.join(input_dir, f))
-        for f in natsorted(os.listdir(input_dir))
-        if is_dicom_file(os.path.join(input_dir, f))
-    ]
-    dcm_objs = [dcmO for dcmO in tmp_dcm_objs if dcmO.dcm_obj.get("Modality")]
+    processed = 0
+    skipped = 0
 
-    if not dcm_objs:
-        return "", ""
-
-    dcm_objs.sort(key=lambda dcmO: dcmO.dcm_obj.get("Modality"))
-    patient_id = dcm_objs[0].dcm_obj.get("PatientID", "")
-
-    keep_patient_key = "p" in keep
-    org_output_dir = output_dir
-
-    # Read the mapping file if provided
-    patient_to_study = {}
-    hash_pat_id = get_hash(patient_id)
-    if mapping:
-        patient_to_study = dict(read_csv(mapping))
-
-    if patient_to_study:
-        new_patient_key = patient_to_study.get(patient_id, hash_pat_id)
-        output_dir = output_dir.replace(os.sep + patient_id + os.sep, os.sep + new_patient_key + os.sep)
-    elif not keep_patient_key:
-        output_dir = output_dir.replace(os.sep + patient_id + os.sep, os.sep + hash_pat_id + os.sep)
-
-    if overwrite:
-        for folder in [output_dir, org_output_dir]:
-            shutil.rmtree(folder, ignore_errors=True)
+    dcm_objs0: list
+    dicomdir_path = os.path.join(input_dir, "DICOMDIR")
+    tmp_dcm_objs = []
+    if os.path.exists(dicomdir_path):
+        if not quiet:
+            typer.secho(f"Found DICOMDIR file at {dicomdir_path}", fg=typer.colors.BRIGHT_YELLOW)
+        ds = dcmread(dicomdir_path)
+        dicomdir_fs = FileSet(ds)
+        dicomdir_fs.remove(dicomdir_fs.find(Modality="OT"))
+        for dcmf in dicomdir_fs.find():
+            dcm = dcmread(dcmf.path)
+            dcm.ReferencedFileID = dcmf.path
+            tmp_dcm_objs.append(dcm)
     else:
-        if os.path.exists(output_dir):
-            # Check if output_dir contains metadata.json and files with the specified image_format
-            has_metadata, opath = check_metadata_exists(output_dir, group)
-            has_images = any(f.endswith(image_format) for f in os.listdir(opath))
+        for file in input_dir.rglob("*"):
+            if file.is_file() and is_dicom_file(file):
+                dcm = dcmread(file)
+                dcm.ReferencedFileID = file
+                tmp_dcm_objs.append(dcm)
 
-            if has_metadata and has_images:
-                if not quiet:
-                    typer.secho(
-                        f"Output directory '{opath}' already exists with metadata and images. Skipping...",
-                        fg="yellow",
-                    )
-                return "", ""
+    dcm_objs0 = [dcm for dcm in tmp_dcm_objs if dcm.get("Modality")]
 
-    dcms = []
-    # using AccessionNumber to emulate group_id
-    for dcmO in dcm_objs:
-        # update modality
-        if not update_modality(dcmO.dcm_obj):
-            continue  # Ignore any other modalities
-        if dcmO.dcm_obj.Modality == ImageModality.UNKNOWN:
+    if not dcm_objs0:
+        return processed, skipped, []
+
+    dcm_objs = [x for x in dcm_objs0 if update_modality(x)]
+
+    if time_group:
+        grouped_dcms = group_dcms_by_acquisition_time(dcm_objs, tol=tol)
+    else:
+        grouped_dcms = group_dcms_by_frame_reference(dcm_objs)
+
+    sorted_groups = sorted(grouped_dcms.items())
+
+    pairs = []  # store (new, old) pat_id if updated
+    for _, group in sorted_groups:
+        patient_id = group[0].get("PatientID", "")
+
+        keep_patient_key = "p" in keep
+
+        # Read the mapping file if provided
+        if not keep_patient_key:
+            study_2_patient = {}
+            new_patient_key = get_hash(patient_id)
+            if mapping:
+                study_2_patient = dict(read_csv(mapping))
+                patient_2_study = {v: k for k, v in study_2_patient.items()}
+
+            if study_2_patient:
+                new_patient_key = patient_2_study.get(patient_id, new_patient_key)
+
+            pairs.append((new_patient_key, patient_id))
+
+        dcms = []
+        sorted_group = sorted(group, key=lambda dcm: dcm.Modality.code)
+        for dcm in sorted_group:
+            if dcm.Modality == ImageModality.UNKNOWN:
+                typer.secho(
+                    f"\nWARN: Unknown modality for {dcm.ReferencedFileID}\n-> {output_dir}",
+                    fg=typer.colors.RED,
+                )
+
+            dcm.AccessionNumber = 0
+
+            if not dcm.get("NumberOfFrames"):
+                dcm.NumberOfFrames = 1
+
+            if not keep_patient_key:
+                dcm.PatientID = new_patient_key
+
+            dcms.append(dcm)
+        res = process_dcm_images(
+            dcm_objs=dcms,
+            output_dir=output_dir,
+            image_format=image_format,
+            mapping=mapping,
+            keep=keep,
+            overwrite=overwrite,
+            quiet=quiet,
+        )
+        if res == "processed":
+            processed += 1
+        elif res == "skipped":
+            skipped += 1
+    total = processed + skipped
+    if processed and not skipped:
+        tag = "processed"
+    elif skipped and not processed:
+        tag = "skipped"
+    elif processed and skipped:
+        tag = "processed/skipped"
+
+    if time_group:
+        n_groups = len(sorted_groups)
+        if total != n_groups:
             typer.secho(
-                f"\nWARN: Unknown modality for {dcmO.filepath}\n-> {output_dir}",
+                f"\nWARN: Number of groups ({n_groups}) differs {tag} ({total})\nConsider increasing '--tol'",
                 fg=typer.colors.RED,
             )
 
-        dcmO.dcm_obj.AccessionNumber = 0
-
-        if not dcmO.dcm_obj.get("NumberOfFrames"):
-            dcmO.dcm_obj.NumberOfFrames = 1
-
-        dcms.append(dcmO.dcm_obj)
-
-    if group:
-        # Group DICOM files by AcquisitionDateTime
-        grouped_dcms = group_dcms_by_acquisition_time(dcms, tol=tol)
-
-        # Sort groups by AcquisitionDateTime
-        sorted_groups = sorted(grouped_dcms.items())
-
-        for gid, (acquisition_time, group_dcms) in enumerate(sorted_groups):
-            group_dir = os.path.join(output_dir, f"group_{gid}")
-
-            if acquisition_time == "unknown":
-                group_dir = os.path.join(output_dir, "group_UNK")
-                typer.secho(
-                    f"\nWARN: unknown AcquisitionDateTime, results in {group_dir} are not reliable", fg=typer.colors.RED
-                )
-
-            new, old = process_dcm_images(
-                dcm_objs=group_dcms, output_dir=group_dir, image_format=image_format, mapping=mapping, keep=keep
-            )
-
-    else:
-        new, old = process_dcm_images(
-            dcm_objs=dcms, output_dir=output_dir, image_format=image_format, mapping=mapping, keep=keep
-        )
-
-    return new, old
+    return processed, skipped, pairs
 
 
 # Ensure that process_dcm_meta docstring includes RESERVED_CSV
@@ -574,6 +617,22 @@ def get_hash(value: str) -> str:
     """Get a 10 digit hash based on the input string."""
     hex_dig = hashlib.sha256(str(value).encode()).hexdigest()
     return f"{int(hex_dig[:8], 16):010}"
+
+
+def hex_hash(input_string: str, length: int = 6) -> str:
+    """
+    Generate a fast, short hexadecimal hash using blake2b.
+
+    Args:
+        input_string (str): The input string to hash.
+        length (int): Length of the hex hash output (4, 6, etc.).
+
+    Returns:
+        str: A short hexadecimal hash.
+    """
+    # blake2b is optimized for speed, digest_size=4 gives 8 hex characters
+    hash_object = hashlib.blake2b(input_string.encode("utf-8"), digest_size=4)
+    return hash_object.hexdigest()[:length]
 
 
 def get_versioned_filename(base_filename: str | Path, version: int) -> str:
