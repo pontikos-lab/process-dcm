@@ -620,8 +620,7 @@ def get_hash(value: str) -> str:
 
 
 def hex_hash(input_string: str, length: int = 6) -> str:
-    """
-    Generate a fast, short hexadecimal hash using blake2b.
+    """Generate a fast, short hexadecimal hash using blake2b.
 
     Args:
         input_string (str): The input string to hash.

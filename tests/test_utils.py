@@ -266,7 +266,7 @@ def test_process_dcm(temp_dir: str, input_dir2: Path, mocker: Any) -> None:
     # Run process_dcm function with overwrite=False, should skip processing
     p, s, new_old = process_dcm(input_dir=input_dir2, output_dir=Path(temp_dir), overwrite=False)
 
-    msg = f"Output directory '{output_dir / '2910892726_20180724_162720_63d3f1_OS_OCT'}' already exists with metadata and images. Skipping..."
+    msg = f"Output directory '{output_dir / '2910892726_20180724_162720_63d3f1_OS_OCT'}' already exists with metadata and images. Skipping..."  # noqa: E501
     mock_secho.assert_called_with(msg, fg=typer.colors.YELLOW)
     assert len(list(output_dir.rglob("*.png"))) == len(output_files_initial)
 
