@@ -1,5 +1,13 @@
 {
-  "cSpell.words": ["cookiecutter", "jinja", "pipx"],
+  "cSpell.words": [
+    "cookiecutter",
+    "dcmf",
+    "dicomdir",
+    "fileset",
+    "jinja",
+    "pipx",
+    "rjson"
+  ],
   "files.watcherExclude": {
     "**/.env/**": true,
     "**/.venv/**": true,
