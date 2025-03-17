@@ -44,6 +44,7 @@ def main(
     tol: float = typer.Option(
         2, "-t", "--tol", help="Tolerance in seconds for grouping DICOM files by AcquisitionDateTime."
     ),
+    n_jobs: int = typer.Option(1, "-j", "--n_jobs", help="Number of parallel jobs."),
     mapping: str = typer.Option(
         "",
         "-m",
@@ -94,6 +95,7 @@ def main(
         mapping=mapping,
         time_group=group,
         tol=tol,
+        n_jobs=n_jobs,
     )
 
     total = processed + skipped

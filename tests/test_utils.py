@@ -338,6 +338,17 @@ def test_mixed_structure(temp_directory: Path) -> None:
     assert (temp_directory / "mixed" / "non_empty").exists()
 
 
+def test_tree_with_invalid_directory() -> None:
+    invalid_directory = "/path/to/invalid/directory"
+    expected_error_message = f"Error: '{invalid_directory}' is not a valid directory."
+
+    # Ensure that the path does not exist or is not a directory
+    assert not os.path.isdir(invalid_directory)
+
+    result = tree(invalid_directory)
+    assert result == expected_error_message
+
+
 def test_non_existent_path() -> None:
     assert not delete_if_empty("/path/does/not/exist")
 

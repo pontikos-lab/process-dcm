@@ -1,3 +1,4 @@
+import shutil
 from glob import glob
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -19,7 +20,7 @@ def test_main_defaults(runner: CliRunner) -> None:
     assert "Input directory 'input_dir' does not exist\nAborted.\n" in output
 
 
-# @pytest.mark.skip(reason="for debug")
+@pytest.mark.skip(reason="for debug")
 def test_main_debug(runner: CliRunner) -> None:
     result = runner.invoke(app, ["/Users/alan/Downloads/CE/Alan_Dicom_Exported", "-q", "-k", "pndg"])
     assert result.exit_code == 0
@@ -128,9 +129,10 @@ def test_main_group(janitor: list[str], runner: CliRunner) -> None:
     janitor.append("study_2_patient_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
-        args = ["tests/example-dcms", "-o", str(output_dir), "-k", "gD", "-g"]
+        args = ["tests", "-o", str(output_dir), "-k", "gD", "-g"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
+        assert "Found DICOMDIR file at tests/DICOMDIR" in result.output
         tof = sorted(output_dir.rglob("*.*"))
         of = sorted(output_dir.rglob("*.png"))
         assert len(tof) == 51
@@ -171,6 +173,29 @@ def test_main_abort(runner: CliRunner) -> None:
     assert output == "'--mapping' x '--keep p': are mutually excluding options\nAborted.\n"
 
 
+def test_main_abort_reserved_csv(runner: CliRunner) -> None:
+    # Expect the typer.Abort exception to be raised
+    args = ["tests/example-dcms", "--mapping", RESERVED_CSV]
+    result = runner.invoke(app, args)
+
+    # Strip ANSI codes from the output
+    output = remove_ansi_codes(result.stdout)
+
+    assert result.exit_code == 1
+    assert output == f"Can't use reserved CSV file name: {RESERVED_CSV}\nAborted.\n"
+
+
+def test_main_no_dicom(runner: CliRunner, tmp_path: Path) -> None:
+    args = [tmp_path.as_posix()]
+    result = runner.invoke(app, args)
+
+    # Strip ANSI codes from the output
+    output = remove_ansi_codes(result.stdout)
+
+    assert result.exit_code == 0
+    assert output == f"\nNo DICOM files found in {tmp_path}\n"
+
+
 # skip this test for CI
 def test_main_mapping_example_dir(janitor: list[str], runner: CliRunner) -> None:
     janitor.append("study_2_patient.csv")
@@ -178,7 +203,7 @@ def test_main_mapping_example_dir(janitor: list[str], runner: CliRunner) -> None
     janitor.append("study_2_patient_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
-        args = ["tests/example_dir", "-o", str(output_dir), "-w", "-k", "nDg", "-m", "tests/map.csv"]
+        args = ["tests/example_dir", "-o", str(output_dir), "-j", "2", "-w", "-k", "nDg", "-m", "tests/map.csv"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         of = sorted([p for p in output_dir.rglob("*") if p.is_file()])
@@ -191,6 +216,12 @@ def test_main_mapping_example_dir(janitor: list[str], runner: CliRunner) -> None
             get_md5(output_dir / "3517807670_20180926_140517_600177_OD_OCT" / "metadata.json", bottom)
             == "e5e15b903b7606df5664bb2951423faf"
         )
+        args = ["tests/example_dir", "-o", str(output_dir), "-k", "nDg", "-m", "tests/map.csv"]
+        result = runner.invoke(app, args)
+        shutil.rmtree(output_dir / "3517807670_20180926_140517_600177_OD_OCT")
+        result = runner.invoke(app, args)
+        assert result.exit_code == 0
+        assert "\nProcessed 1 DICOM folders\nSkipped 3 DICOM folders\n" in result.output
 
 
 def test_main_optos_fa(janitor: list[str], runner: CliRunner) -> None:

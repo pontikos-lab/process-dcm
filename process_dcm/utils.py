@@ -17,11 +17,11 @@ from threading import Lock
 import cv2
 import numpy as np
 import typer
-from natsort import natsorted
 from PIL import Image
 from pydicom.dataset import FileDataset
 from pydicom.filereader import dcmread
 from pydicom.fileset import FileSet
+from rich.progress import track
 
 from process_dcm import __version__
 from process_dcm.const import RESERVED_CSV, ImageModality
@@ -29,15 +29,6 @@ from process_dcm.const import RESERVED_CSV, ImageModality
 warnings.filterwarnings("ignore", category=UserWarning, message="A value of type *")
 
 dict_eye = {"R": "OD", "L": "OS"}
-
-
-class DcmO:
-    """Class to handle DCM obj and its original file path."""
-
-    def __init__(self, dcm_obj: FileDataset, filepath: Path) -> None:
-        """Initialize DcmO with a DICOM object and its file path."""
-        self.dcm_obj = dcm_obj
-        self.filepath = filepath
 
 
 def _check_metadata_exists(output_dir: Path) -> bool:
@@ -251,7 +242,7 @@ def update_modality(dcm: FileDataset) -> bool:
         bool: True if modality is updated; False if the modality is unsupported.
     """
     if dcm.get("Modality") is None:
-        return False  # No modality, continue
+        return False  # No modality, continue # no cov
     elif dcm.Modality == "OPT":
         dcm.Modality = ImageModality.OCT
     elif dcm.Modality == "OP":
@@ -416,27 +407,37 @@ def process_dcm(
     quiet: bool = False,
     time_group: bool = False,
     tol: float = 2,
-) -> tuple[int, int, list[str, str]]:
-    """Process DICOM files from the input directory and save images in the specified format.
+    n_jobs: int = 1,
+) -> tuple[int, int, list[tuple[str, str]]]:
+    """Process DICOM files from the input directory and save images in a specified format.
 
     Args:
-        input_dir (Path): Path to the directory containing DICOM files.
-        image_format (str, optional): The format in which to save the images. Defaults to "png".
-        output_dir (Path, optional): Path to the directory where images will be saved. Defaults to "exported_data".
-        mapping (str, optional): Path to the CSV file containing patient ID to study ID mapping.
+        input_dir (Path): The directory path containing DICOM files to be processed.
+        image_format (str, optional): The format for saving processed images. Defaults to 'png'.
+        output_dir (Path, optional): The directory path where images will be saved after processing.
+                                     Defaults to 'exported_data'.
+        mapping (str, optional): CSV file path for patient ID to study ID mapping.
                                  If not provided and patient_id is anonymized,
                                  a '{RESERVED_CSV}' file will be generated.
-        keep (str, optional): String containing the letters indicating which fields to keep.
-                              Options: 'p' for patient key, 'n' for patient names, 'd' for precise date of birth,
-                              'D' for anonymized date of birth (year only), and 'g' for gender. Defaults to "".
-        overwrite (bool, optional): Whether to overwrite existing files in the output directory. Defaults to False.
-        quiet (bool, optional): Silence verbosity. Defaults to False.
-        time_group (bool, optional): Whether to re-group DICOM files by AcquisitionDateTime. Defaults to False.
-        tol (int, optional): Tolerance in seconds for grouping DICOM files by AcquisitionDateTime. Defaults to 2.
+        keep (str, optional): A string specifying which fields to retain.
+                              Options include: 'p' for patient key,
+                              'n' for patient names,
+                              'd' for precise date of birth,
+                              'D' for anonymized date of birth (keeping year only),
+                              and 'g' for gender. Defaults to ''.
+        overwrite (bool, optional): Flag to determine whether to overwrite existing files in the output directory.
+                                    Defaults to False.
+        quiet (bool, optional): Flag to control verbosity of the process. Defaults to False.
+        time_group (bool, optional): Determines if DICOM files should be re-grouped by AcquisitionDateTime.
+                                     Defaults to False.
+        tol (float, optional): Time tolerance in seconds for grouping DICOM files by AcquisitionDateTime. Defaults to 2.
+        n_jobs (int, optional): The number of parallel jobs to utilize for processing. Defaults to 1.
 
     Returns:
-        tuple[str, str]: A tuple containing the new patient key and the original patient key.
+        tuple[int, int, list[tuple[str, str]]]: A tuple containing the number of processed files, the number of errors,
+                                         and a list of tuples with new patient key and the original patient key.
     """
+    pairs: list[tuple[str, str]] = []  # store (new, old) pat_id if updated
     processed = 0
     skipped = 0
 
@@ -463,7 +464,7 @@ def process_dcm(
     dcm_objs0 = [dcm for dcm in tmp_dcm_objs if dcm.get("Modality")]
 
     if not dcm_objs0:
-        return processed, skipped, []
+        return processed, skipped, pairs
 
     dcm_objs = [x for x in dcm_objs0 if update_modality(x)]
 
@@ -474,24 +475,19 @@ def process_dcm(
 
     sorted_groups = sorted(grouped_dcms.items())
 
-    pairs = []  # store (new, old) pat_id if updated
-    for _, group in sorted_groups:
+    def process_group(group_info: tuple) -> tuple[str, tuple[str, str]]:
+        _, group = group_info
         patient_id = group[0].get("PatientID", "")
-
         keep_patient_key = "p" in keep
+        new_patient_key = patient_id
 
-        # Read the mapping file if provided
         if not keep_patient_key:
             study_2_patient = {}
             new_patient_key = get_hash(patient_id)
             if mapping:
                 study_2_patient = dict(read_csv(mapping))
                 patient_2_study = {v: k for k, v in study_2_patient.items()}
-
-            if study_2_patient:
                 new_patient_key = patient_2_study.get(patient_id, new_patient_key)
-
-            pairs.append((new_patient_key, patient_id))
 
         dcms = []
         sorted_group = sorted(group, key=lambda dcm: dcm.Modality.code)
@@ -501,16 +497,13 @@ def process_dcm(
                     f"\nWARN: Unknown modality for {dcm.ReferencedFileID}\n-> {output_dir}",
                     fg=typer.colors.RED,
                 )
-
             dcm.AccessionNumber = 0
-
             if not dcm.get("NumberOfFrames"):
                 dcm.NumberOfFrames = 1
-
             if not keep_patient_key:
                 dcm.PatientID = new_patient_key
-
             dcms.append(dcm)
+
         res = process_dcm_images(
             dcm_objs=dcms,
             output_dir=output_dir,
@@ -520,10 +513,29 @@ def process_dcm(
             overwrite=overwrite,
             quiet=quiet,
         )
-        if res == "processed":
-            processed += 1
-        elif res == "skipped":
-            skipped += 1
+        return res, (new_patient_key, patient_id)
+
+    if n_jobs > 1:
+        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+            futures = [executor.submit(process_group, group_info) for group_info in sorted_groups]
+            for future in track(
+                as_completed(futures), total=len(sorted_groups), description="Processing groups", disable=quiet
+            ):
+                res, pair = future.result()
+                if res == "processed":
+                    processed += 1
+                elif res == "skipped":
+                    skipped += 1
+                pairs.append(pair)
+    else:
+        for group_info in track(sorted_groups, description="Processing groups", disable=quiet):
+            res, pair = process_group(group_info)
+            if res == "processed":
+                processed += 1
+            elif res == "skipped":
+                skipped += 1
+            pairs.append(pair)
+
     total = processed + skipped
     if processed and not skipped:
         tag = "processed"
@@ -554,44 +566,6 @@ def is_dicom_file(filepath: str | Path) -> bool:
         return True
     except Exception:
         return False
-
-
-def find_dicom_folders_with_base(root_folder: str) -> tuple[int, str, list[str]]:
-    """Finds all unique subfolders within the root folder that contain at least one DICOM file.
-
-    It also returns the common base directory and the number of found subfolders.
-    This function uses pydicom to identify DICOM files instead of relying on file extensions.
-
-    Args:
-        root_folder (str): The path to the root folder to search for subfolders containing DICOM files.
-
-    Returns:
-        tuple[int, str, list[str]]: A tuple containing:
-            - int: The number of subfolders containing at least one DICOM file.
-            - str: The base directory common to all found subfolders, or an empty string if none found.
-            - list[str]: A naturally sorted list of unique full paths of subfolders containing DICOM files.
-
-    Example:
-        find_dicom_folders_with_base("/data/patient")
-    """
-    unique_subfolders = set()
-    for dirpath, _, filenames in os.walk(root_folder):
-        if any(is_dicom_file(os.path.join(dirpath, filename)) for filename in filenames):
-            unique_subfolders.add(dirpath)  # Add the full path of subfolders containing DICOM files
-
-    folders = list(unique_subfolders)
-    len_ins = len(folders)
-
-    if len_ins == 0:
-        return 0, "", []
-
-    if len_ins == 1:
-        base_dir = folders[0].rstrip("/")  # Strip trailing slash if present
-        base_dir = os.path.dirname(base_dir)
-    else:
-        base_dir = os.path.commonpath(folders)  # Get the common base directory
-
-    return len_ins, base_dir, natsorted(folders)
 
 
 def get_md5(file_path: Path | str | list[str] | list[Path], minus: int = 0) -> str:
