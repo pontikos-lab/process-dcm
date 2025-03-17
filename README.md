@@ -20,7 +20,7 @@ pip install process-dcm
 ```
 
 ```bash
-  Usage: process-dcm [OPTIONS] INPUT_DIR
+ Usage: process-dcm [OPTIONS] INPUT_DIR
 
  Process DICOM files in subfolders, extract images and metadata.
  Version: 0.6.1
@@ -34,7 +34,8 @@ pip install process-dcm
 │                                        [default: exported_data]                                              │
 │ --group               -g               Re-group DICOM files in a given folder by AcquisitionDateTime.        │
 │ --tol                 -t      FLOAT    Tolerance in seconds for grouping DICOM files by AcquisitionDateTime. │
-│                                        [default: 2]                                                          │
+│                                        Only used when --group is set.                                        │
+│                                        [default: None]                                                       │
 │ --n_jobs              -j      INTEGER  Number of parallel jobs. [default: 1]                                 │
 │ --mapping             -m      TEXT     Path to CSV containing patient_id to study_id mapping. If not         │
 │                                        provided and patient_id is anonymised, a 'study_2_patient.csv' file   │
@@ -49,7 +50,7 @@ pip install process-dcm
 │ --show-completion                      Show completion for the current shell, to copy it or customize the    │
 │                                        installation.                                                         │
 │ --help                -h               Show this message and exit.                                           │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
 ## For Developers

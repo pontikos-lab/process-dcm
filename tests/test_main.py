@@ -251,3 +251,6 @@ def test_same_time(runner: CliRunner) -> None:
         args = ["tests/same-time", "-rgk", "pndg", "-t", "1", "-o", tmpdirname]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
+        args = ["tests/same-time", "-rk", "pndg", "-t", "1", "-o", tmpdirname]
+        result = runner.invoke(app, args)
+        assert "'--tol' option can only be used when '--group' is set." in result.output

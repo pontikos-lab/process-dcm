@@ -16,6 +16,7 @@ warnings.filterwarnings(
     "ignore", message=r"The value length \(\d+\) exceeds the maximum length of \d+ allowed for VR CS\."
 )
 
+TOL = 2.0
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -42,8 +43,11 @@ def main(
     group: bool = typer.Option(
         False, "-g", "--group", help="Re-group DICOM files in a given folder by AcquisitionDateTime."
     ),
-    tol: float = typer.Option(
-        2, "-t", "--tol", help="Tolerance in seconds for grouping DICOM files by AcquisitionDateTime."
+    tol: float | None = typer.Option(
+        None,
+        "-t",
+        "--tol",
+        help="Tolerance in seconds for grouping DICOM files by AcquisitionDateTime. Only used when --group is set.",
     ),
     n_jobs: int = typer.Option(1, "-j", "--n_jobs", help="Number of parallel jobs."),
     mapping: str = typer.Option(
@@ -87,10 +91,19 @@ def main(
         typer.secho(f"Input directory '{input_dir}' does not exist", fg="red")
         raise typer.Abort()
 
+    if group:
+        if tol is None:
+            tol = TOL  # Default value when grouping is enabled
+    elif tol is not None:
+        typer.secho("'--tol' option can only be used when '--group' is set.", fg="red")
+        raise typer.Abort()
+
     if reset:
         for dcm_folder in output_dir.glob("**/*.DCM"):
             if dcm_folder.is_dir():
                 shutil.rmtree(dcm_folder)
+
+    tol = TOL if tol is None else tol
 
     processed, skipped, results = process_dcm(
         input_dir=input_dir,
