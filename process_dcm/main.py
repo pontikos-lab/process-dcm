@@ -1,6 +1,7 @@
 """App to process DCM files."""
 
 import csv
+import shutil
 import warnings
 from pathlib import Path
 
@@ -58,6 +59,7 @@ def main(
         help="Keep the specified fields (p: patient_key, n: names, d: date_of_birth, D: year-only DOB, g: gender)",
     ),
     overwrite: bool = typer.Option(False, "-w", "--overwrite", help="Overwrite existing images if found."),
+    reset: bool = typer.Option(False, "-r", "--reset", help="Reset the output directory if it exists."),
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Silence verbosity."),
     version: bool = typer.Option(
         None,
@@ -84,6 +86,11 @@ def main(
     if not input_dir.exists():
         typer.secho(f"Input directory '{input_dir}' does not exist", fg="red")
         raise typer.Abort()
+
+    if reset:
+        for dcm_folder in output_dir.glob("**/*.DCM"):
+            if dcm_folder.is_dir():
+                shutil.rmtree(dcm_folder)
 
     processed, skipped, results = process_dcm(
         input_dir=input_dir,

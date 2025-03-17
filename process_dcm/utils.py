@@ -250,7 +250,7 @@ def update_modality(dcm: FileDataset) -> bool:
             dcm.Modality = ImageModality.COLOUR_PHOTO
         elif dcm.Manufacturer.upper() == "OPTOS":
             if dcm.get("HorizontalFieldOfView", 0) == 200:
-                dcm.Modality = ImageModality.PSEUDOCOLOUR_ULTRAWIDEFIELD
+                dcm.Modality = ImageModality.PSEUDOCOLOUR_ULTRAWIDEFIELD  # no cov AWSS
             elif "FA " in dcm.get("SeriesDescription", "") and any(
                 "Fluorescein" in str(item) for item in dcm.get("ContrastBolusAgentSequence", [])
             ):
@@ -340,7 +340,7 @@ def process_dcm_images(
         ref = hex_hash(d0.get("FrameOfReferenceUID", "0"))
         date_tag = f"{do_date(d0.get('AcquisitionDateTime', '00000000'), '%Y%m%d%H%M%S.%f', '%Y%m%d_%H%M%S')}_{ref}"
     lat = dict_eye.get(d0.get("ImageLaterality", d0.get("Laterality")), "OU")
-    target_dir = output_dir / f"{d0.PatientID}_{date_tag}_{lat}_{d0.Modality.code}"
+    target_dir = output_dir / f"{d0.PatientID}_{date_tag}_{lat}_{d0.Modality.code}.DCM"
 
     if overwrite:
         shutil.rmtree(target_dir, ignore_errors=True)
@@ -353,7 +353,7 @@ def process_dcm_images(
             if has_metadata and has_images:
                 if not quiet:
                     typer.secho(
-                        f"Output directory '{target_dir}' already exists with metadata and images. Skipping...",
+                        f"\nOutput directory '{target_dir}' already exists with metadata and images. Skipping...",
                         fg="yellow",
                     )
                 return "skipped"
@@ -512,9 +512,11 @@ def process_dcm(
             keep=keep,
             overwrite=overwrite,
             quiet=quiet,
+            time_group=time_group,
         )
         return res, (new_patient_key, patient_id)
 
+    out_empty = not output_dir.exists() or not any(output_dir.iterdir())
     if n_jobs > 1:
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             futures = [executor.submit(process_group, group_info) for group_info in sorted_groups]
@@ -536,19 +538,11 @@ def process_dcm(
                 skipped += 1
             pairs.append(pair)
 
-    total = processed + skipped
-    if processed and not skipped:
-        tag = "processed"
-    elif skipped and not processed:
-        tag = "skipped"
-    elif processed and skipped:
-        tag = "processed/skipped"
-
-    if time_group:
-        n_groups = len(sorted_groups)
-        if total != n_groups:
+    if time_group and out_empty:
+        nn = len(sorted_groups)
+        if processed != nn:
             typer.secho(
-                f"\nWARN: Number of groups ({n_groups}) differs {tag} ({total})\nConsider increasing '--tol'",
+                f"\nWARN: Number of groups ({nn}) differs from processed ({processed})\nConsider increasing '--tol'",
                 fg=typer.colors.RED,
             )
 
@@ -758,7 +752,7 @@ def delete_if_empty(folder_path: str | Path, n_jobs: int = 1) -> bool:
             with lock:
                 try:
                     folder.rmdir()
-                except FileNotFoundError:
+                except FileNotFoundError:  # no cov AWSS
                     pass
 
         return is_empty

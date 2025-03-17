@@ -103,7 +103,7 @@ def test_main(md5: list[str], meta: str, keep: str, key: str, janitor: list[str]
         args = [
             "tests/example-dcms",
             "--output_dir",
-            str(output_dir),
+            tmpdirname,
             "--overwrite",
             "--keep",
             keep,
@@ -115,7 +115,7 @@ def test_main(md5: list[str], meta: str, keep: str, key: str, janitor: list[str]
         assert len(tof) == 51
         assert (
             get_md5(
-                output_dir / f"{key}_20150624_144600_2e3f4b_OD_OCT" / "metadata.json",
+                output_dir / f"{key}_20150624_144600_2e3f4b_OD_OCT.DCM" / "metadata.json",
                 bottom,
             )
             == meta
@@ -129,21 +129,21 @@ def test_main_group(janitor: list[str], runner: CliRunner) -> None:
     janitor.append("study_2_patient_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
-        args = ["tests", "-o", str(output_dir), "-k", "gD", "-g"]
+        args = ["tests", "-o", tmpdirname, "-k", "gD", "-g"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         assert "Found DICOMDIR file at tests/DICOMDIR" in result.output
         tof = sorted(output_dir.rglob("*.*"))
         of = sorted(output_dir.rglob("*.png"))
-        assert len(tof) == 51
+        assert len(tof) == 52
         assert (
-            get_md5(output_dir / "0780320450_20150624_144600_2e3f4b_OD_OCT" / "metadata.json", bottom)
+            get_md5(output_dir / "0780320450_20150624_144600_OD_OCT.DCM" / "metadata.json", bottom)
             == "6b97085eaf90b6cc2f99680a7343bb3a"
         )
         assert get_md5(of) in ["a726b59587ca4ea1a478802e3ee9235c"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
-        assert "0780320450_20150624_144600_2e3f4b_OD_OCT' already exists with metadata" in result.output
+        assert "0780320450_20150624_144600_OD_OCT.DCM' already exists with metadata" in result.output
 
 
 def test_main_dummy(janitor: list[str], runner: CliRunner) -> None:
@@ -155,7 +155,7 @@ def test_main_dummy(janitor: list[str], runner: CliRunner) -> None:
     of = [x for x in tof if "metadata.json" not in x]
     assert len(tof) == 3
     assert (
-        get_md5(Path("dummy_dir") / "123456__340692_OU_U" / "metadata.json", bottom)
+        get_md5(Path("dummy_dir") / "123456__340692_OU_U.DCM" / "metadata.json", bottom)
         == "c7d343cf486526d737f7fea8dd1ada55"
     )
     assert get_md5(of) in ["fb7c7e0fe4e7d3e89e0daae479d013c4"]
@@ -203,22 +203,22 @@ def test_main_mapping_example_dir(janitor: list[str], runner: CliRunner) -> None
     janitor.append("study_2_patient_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
-        args = ["tests/example_dir", "-o", str(output_dir), "-j", "2", "-w", "-k", "nDg", "-m", "tests/map.csv"]
+        args = ["tests/example_dir", "-o", tmpdirname, "-j", "2", "-w", "-k", "nDg", "-m", "tests/map.csv"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         of = sorted([p for p in output_dir.rglob("*") if p.is_file()])
         assert len(of) == 264
         assert (
-            get_md5(output_dir / "2910892726_20180724_161901_477b53_OS_OCT" / "metadata.json", bottom)
+            get_md5(output_dir / "2910892726_20180724_161901_477b53_OS_OCT.DCM" / "metadata.json", bottom)
             == "e157247cb35354f99e57d5106de5e1ea"
         )
         assert (
-            get_md5(output_dir / "3517807670_20180926_140517_600177_OD_OCT" / "metadata.json", bottom)
+            get_md5(output_dir / "3517807670_20180926_140517_600177_OD_OCT.DCM" / "metadata.json", bottom)
             == "e5e15b903b7606df5664bb2951423faf"
         )
-        args = ["tests/example_dir", "-o", str(output_dir), "-k", "nDg", "-m", "tests/map.csv"]
-        result = runner.invoke(app, args)
-        shutil.rmtree(output_dir / "3517807670_20180926_140517_600177_OD_OCT")
+        args = ["tests/example_dir", "-o", str(output_dir), "-j", "2", "-k", "nDg", "-m", "tests/map.csv"]
+        # result = runner.invoke(app, args)
+        shutil.rmtree(output_dir / "3517807670_20180926_140517_600177_OD_OCT.DCM")
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         assert "\nProcessed 1 DICOM folders\nSkipped 3 DICOM folders\n" in result.output
@@ -231,12 +231,23 @@ def test_main_optos_fa(janitor: list[str], runner: CliRunner) -> None:
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
         input_dir = "tests/optos_fa/"
-        args = [input_dir, "-o", str(tmpdirname), "-k", "pndg"]
+        args = [input_dir, "-o", tmpdirname, "-k", "pndg"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         of = sorted(glob(f"{output_dir}/**/*"))
         assert len(of) == 2
         assert (
-            get_md5(output_dir / "1840002001__44fd1d_OD_OPTOS_FA" / "metadata.json", bottom)
+            get_md5(output_dir / "1840002001__44fd1d_OD_OPTOS_FA.DCM" / "metadata.json", bottom)
             == "ee1d9d5be87c805f5a501b3b82dde86b"
         )
+
+
+def test_same_time(runner: CliRunner) -> None:
+    with TemporaryDirectory() as tmpdirname:
+        args = ["tests/same-time", "-gk", "pndg", "-t", "0.0", "-o", tmpdirname]
+        result = runner.invoke(app, args)
+        assert result.exit_code == 0
+        assert "WARN: Number of groups (2) differs from processed (1)" in result.output
+        args = ["tests/same-time", "-rgk", "pndg", "-t", "1", "-o", tmpdirname]
+        result = runner.invoke(app, args)
+        assert result.exit_code == 0

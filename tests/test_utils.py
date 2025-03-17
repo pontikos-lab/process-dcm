@@ -266,7 +266,7 @@ def test_process_dcm(temp_dir: str, input_dir2: Path, mocker: Any) -> None:
     # Run process_dcm function with overwrite=False, should skip processing
     p, s, new_old = process_dcm(input_dir=input_dir2, output_dir=Path(temp_dir), overwrite=False)
 
-    msg = f"Output directory '{output_dir / '2910892726_20180724_162720_63d3f1_OS_OCT'}' already exists with metadata and images. Skipping..."  # noqa: E501
+    msg = f"\nOutput directory '{output_dir / '2910892726_20180724_162720_63d3f1_OS_OCT.DCM'}' already exists with metadata and images. Skipping..."  # noqa: E501
     mock_secho.assert_called_with(msg, fg=typer.colors.YELLOW)
     assert len(list(output_dir.rglob("*.png"))) == len(output_files_initial)
 
@@ -275,7 +275,7 @@ def test_process_dcm_dummy(temp_dir: str) -> None:
     p, s, new_old = process_dcm(input_dir=Path("tests/dummy_ex"), output_dir=Path(temp_dir), overwrite=True)
     assert new_old == [("2375458543", "123456")]
     assert (
-        get_md5(os.path.join(temp_dir, "2375458543__340692_OU_U", "metadata.json"), bottom)
+        get_md5(os.path.join(temp_dir, "2375458543__340692_OU_U.DCM", "metadata.json"), bottom)
         == "32939ec00df99bad0029b7a48f8a2784"
     )
 
@@ -286,7 +286,7 @@ def test_process_dcm_dummy_group(temp_dir: str) -> None:
     )
     assert new_old == [("2375458543", "123456")]
     assert (
-        get_md5(os.path.join(temp_dir, "2375458543__340692_OU_U", "metadata.json"), bottom)
+        get_md5(os.path.join(temp_dir, "2375458543__OU_U.DCM", "metadata.json"), bottom)
         == "32939ec00df99bad0029b7a48f8a2784"
     )
 
@@ -297,7 +297,7 @@ def test_process_dcm_dummy_mapping(temp_dir: str) -> None:
     )
     assert pair == [("2375458543", "123456")]
     assert (
-        get_md5(os.path.join(temp_dir, "2375458543__340692_OU_U", "metadata.json"), bottom)
+        get_md5(os.path.join(temp_dir, "2375458543__340692_OU_U.DCM", "metadata.json"), bottom)
         == "3d7d3c18ac1f9f2899467f3f1621430c"
     )
 
