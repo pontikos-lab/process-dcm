@@ -1,3 +1,17 @@
+## v0.7.0 (2025-03-17)
+
+### Feat
+
+- update test assertions to include additional MD5 checks for consistency
+- update README and main function to clarify '--tol' option usage and set default tolerance
+- add reset option to main function and enhance DCM file handling
+- enable parallel processing and enhance test coverage with new DICOM examples
+- huge refactoring and add DICOMDIR support
+
+### Refactor
+
+- update process_dcm function to use Path objects and clean up tests
+
 ## v0.6.1 (2025-03-12)
 
 ### Refactor
