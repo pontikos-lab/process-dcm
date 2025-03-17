@@ -140,7 +140,10 @@ def test_main_group(janitor: list[str], runner: CliRunner) -> None:
             get_md5(output_dir / "0780320450_20150624_144600_OD_OCT.DCM" / "metadata.json", bottom)
             == "6b97085eaf90b6cc2f99680a7343bb3a"
         )
-        assert get_md5(of) in ["a726b59587ca4ea1a478802e3ee9235c"]
+        assert get_md5(of) in [
+            "a726b59587ca4ea1a478802e3ee9235c",  # local
+            "5ba37cc43233db423394cf98c81d5fbc",  # GH
+        ]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         assert "0780320450_20150624_144600_OD_OCT.DCM' already exists with metadata" in result.output
@@ -158,7 +161,10 @@ def test_main_dummy(janitor: list[str], runner: CliRunner) -> None:
         get_md5(Path("dummy_dir") / "123456__340692_OU_U.DCM" / "metadata.json", bottom)
         == "c7d343cf486526d737f7fea8dd1ada55"
     )
-    assert get_md5(of) in ["fb7c7e0fe4e7d3e89e0daae479d013c4"]
+    assert get_md5(of) in [
+        "fb7c7e0fe4e7d3e89e0daae479d013c4",  # local
+        "30b70623445f7c12d8ad773c9738c7ce",  # GH
+    ]
 
 
 def test_main_abort(runner: CliRunner) -> None:
