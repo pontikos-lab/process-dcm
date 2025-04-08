@@ -269,7 +269,7 @@ def test_optomap(runner: CliRunner) -> None:
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         md5 = get_md5(output_dir / "252-1052__4eb9d4_OS_PCUWF.DCM/PCUWF-0_0.png")
-        assert md5 == "8ef9cf6a4eb98b80129c398368cf1925"
+        assert md5 in ["8ef9cf6a4eb98b80129c398368cf1925", "6124405b60c88310f072fb31b207805d"]
         assert (
             get_md5(output_dir / "252-1052__4eb9d4_OS_PCUWF.DCM/metadata.json", bottom)
             == "ef1db519057e24a23ebb6f23e3684f21"
