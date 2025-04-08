@@ -260,3 +260,17 @@ def test_same_time(runner: CliRunner) -> None:
         args = ["tests/same-time", "-rk", "pndg", "-t", "1", "-o", tmpdirname]
         result = runner.invoke(app, args)
         assert "'--tol' option can only be used when '--group' is set." in result.output
+
+
+def test_optomap(runner: CliRunner) -> None:
+    with TemporaryDirectory() as tmpdirname:
+        output_dir = Path(tmpdirname)
+        args = ["tests/rg_optomap", "-k", "pndg", "-o", tmpdirname]
+        result = runner.invoke(app, args)
+        assert result.exit_code == 0
+        md5 = get_md5(output_dir / "252-1052__4eb9d4_OS_PCUWF.DCM/PCUWF-0_0.png")
+        assert md5 == "8ef9cf6a4eb98b80129c398368cf1925"
+        assert (
+            get_md5(output_dir / "252-1052__4eb9d4_OS_PCUWF.DCM/metadata.json", bottom)
+            == "ef1db519057e24a23ebb6f23e3684f21"
+        )

@@ -159,7 +159,7 @@ def process_dcm_meta(dcm_objs: list[FileDataset], output_dir: Path, mapping: str
     metadata["series"] = {}
     metadata["images"]["images"] = []
     metadata["parser_version"] = [1, 5, 2]
-    metadata["py_dcm_version"] = list(map(int, __version__.split(".")))
+    metadata["py_dcm_version"] = [int(x) for x in __version__.split(".") if x.isdigit()]
 
     keep_gender = "g" in keep
     keep_names = "n" in keep
@@ -255,6 +255,12 @@ def update_modality(dcm: FileDataset) -> bool:
                 "Fluorescein" in str(item) for item in dcm.get("ContrastBolusAgentSequence", [])
             ):
                 dcm.Modality = ImageModality.OPTOS_FA
+            elif "RG OPTOMAP" in dcm.get("SeriesDescription", "").upper():
+                dcm.Modality = ImageModality.PSEUDOCOLOUR_ULTRAWIDEFIELD
+            elif "OPTOMAP" in dcm.get("SeriesDescription", "").upper():
+                dcm.Modality = ImageModality.UNKNOWN_ULTRAWIDEFIELD
+            else:
+                dcm.Modality = ImageModality.UNKNOWN
         elif " IR" in dcm.get("SeriesDescription", ""):
             dcm.Modality = ImageModality.SLO_INFRARED
         elif " BAF " in dcm.get("SeriesDescription", ""):

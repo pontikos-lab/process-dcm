@@ -32,20 +32,20 @@ requires-poetry = ">=2.0"
 packages = [{ include = "process_dcm" }]
 
 [tool.poetry.group.dev.dependencies]
-boto3-stubs = { extras = ["lambda", "s3"], version = "1.37.13" }
+boto3-stubs = { extras = ["lambda", "s3"], version = "1.37.29" }
 ipdb = "0.13.13"
 ipython = "8.34.0"
 mypy = "1.15.0"
-mypy-boto3-lambda = "1.37.0"
-mypy-boto3-s3 = "1.37.0"
+mypy-boto3-lambda = "1.37.16"
+mypy-boto3-s3 = "1.37.24"
 pandas-stubs = "2.2.3.250308"
 pdbpp = "0.10.3"
 pip = "25.0.1"
-pre-commit = "4.1.0"
-pytest-cov = "6.0.0"
+pre-commit = "4.2.0"
+pytest-cov = "6.1.1"
 pytest-env = "1.1.5"
 pytest-xdist = "3.6.1"
-ruff = "0.11.0"
+ruff = "0.11.4"
 typed-argument-parser = "1.10.1"
 wheel = "0.45.1"
 pytest-mock = "^3.14.0"
