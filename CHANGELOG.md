@@ -1,3 +1,12 @@
+## v0.8.0 (2025-04-08)
+
+### Feat
+
+- update MD5 assertion in test_optomap for additional checksum validation
+- update ipython dependency to version 8.35.0
+- add example DICOM file for testing purposes
+- enhance DICOM modality detection for OPTOS Optomap
+
 ## v0.7.0 (2025-03-17)
 
 ### Feat

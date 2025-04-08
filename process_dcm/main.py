@@ -76,7 +76,7 @@ def main(
 ) -> None:
     """Process DICOM files in subfolders, extract images and metadata.
 
-    Version: 0.7.0
+    Version: 0.8.0
     """
     keep_patient_key = "p" in keep
     if not keep_patient_key:
