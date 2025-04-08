@@ -8,7 +8,7 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: check-added-large-files
         args:
-          - "--maxkb=5000"
+          - "--maxkb=11000"
       # - id: debug-statements # not for process_dcm
       - id: check-yaml
         exclude: mkdocs.yml
