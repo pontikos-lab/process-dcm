@@ -34,7 +34,7 @@ packages = [{ include = "process_dcm" }]
 [tool.poetry.group.dev.dependencies]
 boto3-stubs = { extras = ["lambda", "s3"], version = "1.37.29" }
 ipdb = "0.13.13"
-ipython = "8.34.0"
+ipython = "8.35.0"
 mypy = "1.15.0"
 mypy-boto3-lambda = "1.37.16"
 mypy-boto3-s3 = "1.37.24"
