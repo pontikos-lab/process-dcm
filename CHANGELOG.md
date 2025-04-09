@@ -1,3 +1,9 @@
+## v0.9.0 (2025-04-09)
+
+### Feat
+
+- update input parameter to accept either a file or a folder
+
 ## v0.8.0 (2025-04-08)
 
 ### Feat
