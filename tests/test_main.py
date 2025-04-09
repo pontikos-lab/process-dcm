@@ -14,10 +14,10 @@ from tests.conftest import bottom, remove_ansi_codes
 
 
 def test_main_defaults(runner: CliRunner) -> None:
-    result = runner.invoke(app, ["input_dir"])
+    result = runner.invoke(app, ["input_path"])
     output = remove_ansi_codes(result.stdout)
     assert result.exit_code == 1
-    assert "Input directory 'input_dir' does not exist\nAborted.\n" in output
+    assert "Input path 'input_path' does not exist\nAborted.\n" in output
 
 
 @pytest.mark.skip(reason="for debug")
@@ -34,13 +34,13 @@ def test_main_version(runner: CliRunner) -> None:
 
 
 @pytest.mark.parametrize(
-    "input_dir, image_format, output_dir, additional_args, expected_output",
+    "input_path, image_format, output_dir, additional_args, expected_output",
     [
         ("path/to/dcm", "jpg", "/tmp/exported_data", [], "Aborted"),
     ],
 )
 def test_main_with_options(
-    input_dir: str,
+    input_path: str,
     image_format: str,
     output_dir: str,
     additional_args: list[str],
@@ -48,7 +48,7 @@ def test_main_with_options(
     runner: CliRunner,
 ) -> None:
     args = [
-        input_dir,
+        input_path,
         "--image_format",
         image_format,
         "--output_dir",
@@ -67,7 +67,7 @@ def test_cli_without_args(runner: CliRunner) -> None:
     result = runner.invoke(app)
     assert result.exit_code == 2
     output = remove_ansi_codes(result.stdout)
-    assert "Missing argument 'INPUT_DIR'" in output
+    assert "Missing argument 'INPUT_PATH'" in output
 
 
 @pytest.mark.parametrize(
@@ -236,8 +236,8 @@ def test_main_optos_fa(janitor: list[str], runner: CliRunner) -> None:
     janitor.append("study_2_patient_2.csv")
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
-        input_dir = "tests/optos_fa/"
-        args = [input_dir, "-o", tmpdirname, "-k", "pndg"]
+        input_path = "tests/optos_fa/"
+        args = [input_path, "-o", tmpdirname, "-k", "pndg"]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         of = sorted(glob(f"{output_dir}/**/*"))
@@ -265,7 +265,7 @@ def test_same_time(runner: CliRunner) -> None:
 def test_optomap(runner: CliRunner) -> None:
     with TemporaryDirectory() as tmpdirname:
         output_dir = Path(tmpdirname)
-        args = ["tests/rg_optomap", "-k", "pndg", "-o", tmpdirname]
+        args = ["tests/rg_optomap/example.dcm", "-k", "pndg", "-o", tmpdirname]
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         md5 = get_md5(output_dir / "252-1052__4eb9d4_OS_PCUWF.DCM/PCUWF-0_0.png")

@@ -404,7 +404,7 @@ def group_dcms_by_frame_reference(dcms: list[FileDataset]) -> dict[str, list[Fil
 
 
 def process_dcm(
-    input_dir: Path,
+    input_path: Path,
     image_format: str = "png",
     output_dir: Path = Path("exported_data"),
     mapping: str = "",
@@ -418,7 +418,7 @@ def process_dcm(
     """Process DICOM files from the input directory and save images in a specified format.
 
     Args:
-        input_dir (Path): The directory path containing DICOM files to be processed.
+        input_path (Path): The path to a DCM file or a folder containing DICOM files to be processed.
         image_format (str, optional): The format for saving processed images. Defaults to 'png'.
         output_dir (Path, optional): The directory path where images will be saved after processing.
                                      Defaults to 'exported_data'.
@@ -448,7 +448,7 @@ def process_dcm(
     skipped = 0
 
     dcm_objs0: list
-    dicomdir_path = os.path.join(input_dir, "DICOMDIR")
+    dicomdir_path = os.path.join(input_path, "DICOMDIR")
     tmp_dcm_objs = []
     if os.path.exists(dicomdir_path):
         if not quiet:
@@ -460,8 +460,12 @@ def process_dcm(
             dcm = dcmread(dcmf.path)
             dcm.ReferencedFileID = dcmf.path
             tmp_dcm_objs.append(dcm)
+    elif input_path.is_file():
+        dcm = dcmread(input_path)
+        dcm.ReferencedFileID = input_path
+        tmp_dcm_objs.append(dcm)
     else:
-        for file in input_dir.rglob("*"):
+        for file in input_path.rglob("*"):
             if file.is_file() and is_dicom_file(file):
                 dcm = dcmread(file)
                 dcm.ReferencedFileID = file

@@ -30,7 +30,7 @@ def print_version(value: bool) -> None:
 
 @app.command()
 def main(
-    input_dir: Path = typer.Argument(..., help="Input directory containing subfolders with DICOM files."),
+    input_path: Path = typer.Argument(..., help="Input path to either a DCM file or a folder containing DICOM files."),
     image_format: str = typer.Option(
         "png", "-f", "--image_format", help="Image format for extracted images (png, jpg, webp)."
     ),
@@ -87,8 +87,8 @@ def main(
         typer.secho("'--mapping' x '--keep p': are mutually excluding options", fg=typer.colors.BRIGHT_YELLOW)
         raise typer.Abort()
 
-    if not input_dir.exists():
-        typer.secho(f"Input directory '{input_dir}' does not exist", fg="red")
+    if not input_path.exists():
+        typer.secho(f"Input path '{input_path}' does not exist", fg="red")
         raise typer.Abort()
 
     if group:
@@ -106,7 +106,7 @@ def main(
     tol = TOL if tol is None else tol
 
     processed, skipped, results = process_dcm(
-        input_dir=input_dir,
+        input_path=input_path,
         output_dir=output_dir,
         image_format=image_format,
         overwrite=overwrite,
@@ -121,7 +121,7 @@ def main(
     total = processed + skipped
 
     if not total:
-        typer.secho(f"\nNo DICOM files found in {input_dir}", fg="yellow")
+        typer.secho(f"\nNo DICOM files found in {input_path}", fg="yellow")
         raise typer.Exit()
 
     delete_if_empty(output_dir)
