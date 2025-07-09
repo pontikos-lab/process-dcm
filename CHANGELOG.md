@@ -1,3 +1,13 @@
+## v0.10.0 (2025-07-09)
+
+### Feat
+
+- :sparkles: add `source_file` to metadata, increase parser_version to 1.5.3 DCM  (#4)
+
+### Fix
+
+- update expected MD5 hash in `test_main_dummy` for consistency with latest changes
+
 ## v0.9.0 (2025-04-09)
 
 ### Feat
