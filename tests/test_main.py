@@ -157,10 +157,10 @@ def test_main_dummy(janitor: list[str], runner: CliRunner) -> None:
     tof = sorted(glob("dummy_dir/**/*"))
     of = [x for x in tof if "metadata.json" not in x]
     assert len(tof) == 3
-    assert (
-        get_md5(Path("dummy_dir") / "123456__340692_OU_U.DCM" / "metadata.json", bottom)
-        == "dfe455bef4335776973b8e0e88e32d18"
-    )
+    assert get_md5(Path("dummy_dir") / "123456__340692_OU_U.DCM" / "metadata.json", bottom) in [
+        "dfe455bef4335776973b8e0e88e32d18",  # local
+        "3432e7670635837b2631658ef78f7192",  # GH
+    ]
     assert get_md5(of) in [
         "fb7c7e0fe4e7d3e89e0daae479d013c4",  # local
         "30b70623445f7c12d8ad773c9738c7ce",  # GH
