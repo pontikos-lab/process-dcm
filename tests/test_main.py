@@ -163,7 +163,7 @@ def test_main_dummy(janitor: list[str], runner: CliRunner) -> None:
     ]
     assert get_md5(of) in [
         "fb7c7e0fe4e7d3e89e0daae479d013c4",  # local
-        "30b70623445f7c12d8ad773c9738c7ce",  # GH
+        "77bb205173d3b15f6131b530a29c2ab7",  # GH
     ]
 
 

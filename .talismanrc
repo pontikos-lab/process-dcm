@@ -1,4 +1,4 @@
 fileignoreconfig:
   - filename: tests/test_main.py
-    checksum: be5d8c327c306669612a7097a6725e52ac28be7ddf95352ae8065ac45fb9334a
+    checksum: 308134c2e48d77cdd87143bab97c2e407c6bd674cdc51b731c41910f65b814d3
 version: "1.0"
