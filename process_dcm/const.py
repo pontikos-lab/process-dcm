@@ -139,3 +139,10 @@ class ImageModality(Enum):
     def is_sensitive(self) -> bool:
         """Returns True if this modality may contain sensitive data."""
         return ModalityFlag.SENSITIVE in self.flags
+
+
+if __name__ == "__main__":
+    import json
+
+    modalities = [{"name": m.name, "value": m.value, "code": m.code} for m in ImageModality]
+    print(json.dumps(modalities, indent=2))

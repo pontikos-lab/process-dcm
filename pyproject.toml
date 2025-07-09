@@ -14,11 +14,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "opencv-python-headless>=4.11.0.86",
-    "typer>=0.15.2",
+    "opencv-python-headless>=4.12.0.88",
+    "typer>=0.16.0",
     "pydicom>=3.0.1",
-    "pillow>=11.1.0",
-    "python-gdcm>=3.0.24.1",
+    "pillow>=11.3.0",
+    "python-gdcm>=3.0.25",
 ]
 
 [project.urls]
@@ -32,23 +32,23 @@ requires-poetry = ">=2.0"
 packages = [{ include = "process_dcm" }]
 
 [tool.poetry.group.dev.dependencies]
-boto3-stubs = { extras = ["lambda", "s3"], version = "1.37.29" }
+boto3-stubs = { extras = ["lambda", "s3"], version = "1.39.3" }
 ipdb = "0.13.13"
-ipython = "8.35.0"
-mypy = "1.15.0"
-mypy-boto3-lambda = "1.37.16"
-mypy-boto3-s3 = "1.37.24"
-pandas-stubs = "2.2.3.250308"
-pdbpp = "0.10.3"
-pip = "25.0.1"
+ipython = "8.37.0"
+mypy = "1.16.1"
+mypy-boto3-lambda = "1.39.0"
+mypy-boto3-s3 = "1.39.2"
+pandas-stubs = "2.3.0.250703"
+pdbpp = "0.11.6"
+pip = "25.1.1"
 pre-commit = "4.2.0"
-pytest-cov = "6.1.1"
+pytest-cov = "6.2.1"
 pytest-env = "1.1.5"
-pytest-xdist = "3.6.1"
-ruff = "0.11.4"
+pytest-xdist = "3.8.0"
+ruff = "0.12.2"
 typed-argument-parser = "1.10.1"
 wheel = "0.45.1"
-pytest-mock = "^3.14.0"
+pytest-mock = "^3.14.1"
 
 [tool.pytest.ini_options]
 addopts = "tests --cov=process_dcm/ --cov-report=term-missing:skip-covered --cov-report=xml --dist=loadgroup -n 8 --durations=5"

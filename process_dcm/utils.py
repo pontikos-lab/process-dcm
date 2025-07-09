@@ -93,13 +93,21 @@ def meta_images(dcm_obj: FileDataset) -> dict:
     meta["size"]["width"] = dcm_obj.get("Columns", 0)
     meta["size"]["height"] = dcm_obj.get("Rows", 0)
     meta["field_of_view"] = dcm_obj.get("HorizontalFieldOfView")
-    meta["source_id"] = f"{dcm_obj.Modality.code}-{dcm_obj.AccessionNumber}"
+    meta["source_id"] = f"{dcm_obj.Modality.code}-{dcm_obj.AccessionNumber}"  # pyright: ignore[reportArgumentType]
+
+    # Add relative path to source DICOM file if available
+    if hasattr(dcm_obj, "ReferencedFileID"):
+        # Store as string, relative to the output directory (target_dir)
+        meta["source_file"] = os.path.relpath(str(dcm_obj.ReferencedFileID), os.getcwd())  # pyright: ignore[reportArgumentType]
+    else:
+        meta["source_file"] = None  # pyright: ignore[reportArgumentType]
+
     if mod.is_2d_image:
         meta["dimensions_mm"]["width"] = dcm_obj.get("Columns", 0) * dcm_obj.get("PixelSpacing", [0, 0])[1]
         meta["dimensions_mm"]["height"] = dcm_obj.get("Rows", 0) * dcm_obj.get("PixelSpacing", [0, 0])[0]
         meta["resolutions_mm"]["width"] = dcm_obj.get("PixelSpacing", [0, 0])[1]
         meta["resolutions_mm"]["height"] = dcm_obj.get("PixelSpacing", [0, 0])[0]
-        meta["contents"] = [{}]
+        meta["contents"] = [{}]  # pyright: ignore[reportArgumentType]
     elif mod.code == "OCT":
         ss = dcm_obj.get("SharedFunctionalGroupsSequence")
         if "OPTOPOL" in dcm_obj.Manufacturer.upper():
@@ -120,7 +128,7 @@ def meta_images(dcm_obj: FileDataset) -> dict:
                 meta["resolutions_mm"]["depth"] = ss[0].PixelMeasuresSequence[0].get("SliceThickness", 0)
             except AttributeError:
                 pass
-        meta["contents"] = []
+        meta["contents"] = []  # pyright: ignore[reportArgumentType]
         pp = dcm_obj.get("PerFrameFunctionalGroupsSequence")
         if pp:
             for ii in pp:
@@ -158,8 +166,8 @@ def process_dcm_meta(dcm_objs: list[FileDataset], output_dir: Path, mapping: str
     metadata["exam"] = {}
     metadata["series"] = {}
     metadata["images"]["images"] = []
-    metadata["parser_version"] = [1, 5, 2]
-    metadata["py_dcm_version"] = [int(x) for x in __version__.split(".") if x.isdigit()]
+    metadata["parser_version"] = [1, 5, 3]  # pyright: ignore[reportArgumentType]
+    metadata["py_dcm_version"] = [int(x) for x in __version__.split(".") if x.isdigit()]  # pyright: ignore[reportArgumentType]
 
     keep_gender = "g" in keep
     keep_names = "n" in keep
@@ -379,6 +387,14 @@ def process_dcm_images(
                 out_img = os.path.join(target_dir, f"{dcmO.Modality.code}-{dcmO.AccessionNumber}_{i}.{image_format}")
 
             array = cv2.normalize(arr[i], None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)  # type: ignore #AWSS
+
+            # Adjust array shape if necessary
+            if array.ndim == 3:  # Check if the array has a channel dimension
+                if array.shape[0] == 1:  # Single channel image
+                    array = array[0]  # Remove the channel dimension
+                elif array.shape[0] == 3:  # RGB image
+                    array = array.transpose(1, 2, 0)  # Change to (height, width, channels)
+
             image = Image.fromarray(array)
             image.save(out_img)
     process_dcm_meta(dcm_objs=dcm_objs, output_dir=target_dir, mapping=mapping, keep=keep)

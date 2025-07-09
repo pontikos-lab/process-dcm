@@ -54,5 +54,7 @@
     },
     "editor.formatOnType": true
   },
-  "conventionalCommits.scopes": ["deps"]
+  "conventionalCommits.scopes": ["deps"],
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "python-envs.pythonProjects": []
 }

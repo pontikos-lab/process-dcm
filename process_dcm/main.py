@@ -148,13 +148,15 @@ def main(
             process_and_save_csv(unique_sorted_results, RESERVED_CSV, quiet=quiet)
 
     if not quiet:
+        msg = ""
         if processed and not skipped:
             msg = f"Processed {processed} DICOM folders\nSaved to '{output_dir.resolve()}'"
         elif skipped and not processed:
             msg = f"Skipped {skipped} DICOM folders in folder '{output_dir.resolve()}'"
         elif processed and skipped:
             msg = f"Processed {processed} DICOM folders\nSkipped {skipped} DICOM folders\nSee '{output_dir.resolve()}'"
-        typer.secho(msg, fg=typer.colors.BRIGHT_WHITE)
+        if msg:
+            typer.secho(msg, fg=typer.colors.BRIGHT_WHITE)
 
 
 def cli() -> None:

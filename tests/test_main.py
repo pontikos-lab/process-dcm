@@ -15,7 +15,7 @@ from tests.conftest import bottom, remove_ansi_codes
 
 def test_main_defaults(runner: CliRunner) -> None:
     result = runner.invoke(app, ["input_path"])
-    output = remove_ansi_codes(result.stdout)
+    output = remove_ansi_codes(result.stdout) + remove_ansi_codes(result.stderr)
     assert result.exit_code == 1
     assert "Input path 'input_path' does not exist\nAborted.\n" in output
 
@@ -66,7 +66,7 @@ def test_main_with_options(
 def test_cli_without_args(runner: CliRunner) -> None:
     result = runner.invoke(app)
     assert result.exit_code == 2
-    output = remove_ansi_codes(result.stdout)
+    output = remove_ansi_codes(result.stderr)
     assert "Missing argument 'INPUT_PATH'" in output
 
 
@@ -75,19 +75,19 @@ def test_cli_without_args(runner: CliRunner) -> None:
     [
         (
             ["5ba37cc43233db423394cf98c81d5fbc", "a726b59587ca4ea1a478802e3ee9235c"],
-            "f6d93f3763ede47885ecbcefc6ff2153",
+            "e762d18b90b39e55cd53094288157eb8",
             "pndg",
             "bbff7a25-d32c-4192-9330-0bb01d49f746",
         ),
         (
             ["5ba37cc43233db423394cf98c81d5fbc", "a726b59587ca4ea1a478802e3ee9235c"],
-            "0f5b4e1006a22dab2d85beafb07d21f5",
+            "6d7a42b68af0191f8710cea06ba6c521",
             "pnDg",
             "bbff7a25-d32c-4192-9330-0bb01d49f746",
         ),
         (
             ["5ba37cc43233db423394cf98c81d5fbc", "a726b59587ca4ea1a478802e3ee9235c"],
-            "b6097b6a5f2ec1fe727737efb2c09674",
+            "f706061cebaba9c14ae96dd595cd7b00",
             "",
             "0780320450",
         ),
@@ -138,7 +138,7 @@ def test_main_group(janitor: list[str], runner: CliRunner) -> None:
         assert len(tof) == 52
         assert (
             get_md5(output_dir / "0780320450_20150624_144600_OD_OCT.DCM" / "metadata.json", bottom)
-            == "6b97085eaf90b6cc2f99680a7343bb3a"
+            == "ba6648bf45d86752bd20dc72c4ec5b47"
         )
         assert get_md5(of) in [
             "a726b59587ca4ea1a478802e3ee9235c",  # local
@@ -159,7 +159,7 @@ def test_main_dummy(janitor: list[str], runner: CliRunner) -> None:
     assert len(tof) == 3
     assert (
         get_md5(Path("dummy_dir") / "123456__340692_OU_U.DCM" / "metadata.json", bottom)
-        == "c7d343cf486526d737f7fea8dd1ada55"
+        == "dfe455bef4335776973b8e0e88e32d18"
     )
     assert get_md5(of) in [
         "fb7c7e0fe4e7d3e89e0daae479d013c4",  # local
@@ -173,7 +173,7 @@ def test_main_abort(runner: CliRunner) -> None:
     result = runner.invoke(app, args)
 
     # Strip ANSI codes from the output
-    output = remove_ansi_codes(result.stdout)
+    output = remove_ansi_codes(result.stdout) + remove_ansi_codes(result.stderr)
 
     assert result.exit_code == 1
     assert output == "'--mapping' x '--keep p': are mutually excluding options\nAborted.\n"
@@ -185,7 +185,7 @@ def test_main_abort_reserved_csv(runner: CliRunner) -> None:
     result = runner.invoke(app, args)
 
     # Strip ANSI codes from the output
-    output = remove_ansi_codes(result.stdout)
+    output = remove_ansi_codes(result.stdout) + remove_ansi_codes(result.stderr)
 
     assert result.exit_code == 1
     assert output == f"Can't use reserved CSV file name: {RESERVED_CSV}\nAborted.\n"
@@ -216,11 +216,11 @@ def test_main_mapping_example_dir(janitor: list[str], runner: CliRunner) -> None
         assert len(of) == 264
         assert (
             get_md5(output_dir / "2910892726_20180724_161901_477b53_OS_OCT.DCM" / "metadata.json", bottom)
-            == "e157247cb35354f99e57d5106de5e1ea"
+            == "f40efe6f3400bd1bc2345eb472743a61"
         )
         assert (
             get_md5(output_dir / "3517807670_20180926_140517_600177_OD_OCT.DCM" / "metadata.json", bottom)
-            == "e5e15b903b7606df5664bb2951423faf"
+            == "a040bd108eb762450f205a43ff3d80ec"
         )
         args = ["tests/example_dir", "-o", str(output_dir), "-j", "2", "-k", "nDg", "-m", "tests/map.csv"]
         # result = runner.invoke(app, args)
@@ -244,7 +244,7 @@ def test_main_optos_fa(janitor: list[str], runner: CliRunner) -> None:
         assert len(of) == 2
         assert (
             get_md5(output_dir / "1840002001__44fd1d_OD_OPTOS_FA.DCM" / "metadata.json", bottom)
-            == "ee1d9d5be87c805f5a501b3b82dde86b"
+            == "fc9e00e17aab58355d949ea205f9f6a6"
         )
 
 
@@ -272,5 +272,5 @@ def test_optomap(runner: CliRunner) -> None:
         assert md5 in ["8ef9cf6a4eb98b80129c398368cf1925", "6124405b60c88310f072fb31b207805d"]
         assert (
             get_md5(output_dir / "252-1052__4eb9d4_OS_PCUWF.DCM/metadata.json", bottom)
-            == "ef1db519057e24a23ebb6f23e3684f21"
+            == "3a4e60a2201c9666cbe9700c2c3438de"
         )

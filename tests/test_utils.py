@@ -276,7 +276,7 @@ def test_process_dcm_dummy(temp_dir: str) -> None:
     assert new_old == [("2375458543", "123456")]
     assert (
         get_md5(os.path.join(temp_dir, "2375458543__340692_OU_U.DCM", "metadata.json"), bottom)
-        == "32939ec00df99bad0029b7a48f8a2784"
+        == "a770962058621bd0b4e6e6a5ba5e1e7a"
     )
 
 
@@ -287,7 +287,7 @@ def test_process_dcm_dummy_group(temp_dir: str) -> None:
     assert new_old == [("2375458543", "123456")]
     assert (
         get_md5(os.path.join(temp_dir, "2375458543__OU_U.DCM", "metadata.json"), bottom)
-        == "32939ec00df99bad0029b7a48f8a2784"
+        == "a770962058621bd0b4e6e6a5ba5e1e7a"
     )
 
 
@@ -298,7 +298,7 @@ def test_process_dcm_dummy_mapping(temp_dir: str) -> None:
     assert pair == [("2375458543", "123456")]
     assert (
         get_md5(os.path.join(temp_dir, "2375458543__340692_OU_U.DCM", "metadata.json"), bottom)
-        == "3d7d3c18ac1f9f2899467f3f1621430c"
+        == "7d60d85ffcf442ccece3948af93873bc"
     )
 
 
