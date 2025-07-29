@@ -93,6 +93,8 @@ def meta_images(dcm_obj: FileDataset) -> dict:
     meta["size"]["width"] = dcm_obj.get("Columns", 0)
     meta["size"]["height"] = dcm_obj.get("Rows", 0)
     meta["field_of_view"] = dcm_obj.get("HorizontalFieldOfView")
+    meta["sop_instance_uid"] = dcm_obj.get("SOPInstanceUID")
+    meta["sop_class_uid"] = dcm_obj.get("SOPClassUID")
     meta["source_id"] = f"{dcm_obj.Modality.code}-{dcm_obj.AccessionNumber}"  # pyright: ignore[reportArgumentType]
 
     # Add relative path to source DICOM file if available
