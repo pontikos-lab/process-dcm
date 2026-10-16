@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/eye2Gene/e2g-pypkg",
-  "commit": "a11b90a1049f46e7695f33772810c62eda48187d",
+  "commit": "15a1969d331dca0b7886c61e5d1ea76fb021eb03",
   "skip": [],
   "context": {
     "cookiecutter": {
@@ -12,7 +12,7 @@
       "project_short_description": "Python library and app to extract images from DCM in a JSON-based standard format",
       "publish_to": "pypi_org",
       "_template": "https://github.com/eye2Gene/e2g-pypkg",
-      "_commit": "a11b90a1049f46e7695f33772810c62eda48187d"
+      "_commit": "15a1969d331dca0b7886c61e5d1ea76fb021eb03"
     }
   },
   "checkout": null
