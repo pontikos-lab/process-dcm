@@ -92,7 +92,7 @@ clean-test:
     rm -fr htmlcov/
     rm -fr .pytest_cache
 
-VERSION := `python -c 'import importlib.metadata as m; print(next((d.version for d in m.distributions() if d.metadata["Name"].lower()=="process-dcm"), "0.0.0.dev0"))'`
+VERSION := `uv run python -c 'import importlib.metadata as m; print(next((d.version for d in m.distributions() if d.metadata["Name"].lower()=="process-dcm"), "0.0.0.dev0"))'`
 
 # Print the current version of the project
 version:
