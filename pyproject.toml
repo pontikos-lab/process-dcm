@@ -3,7 +3,7 @@ name = "process-dcm"
 version = "1.0.0"
 description = "Python library and app to extract images from DCM in a JSON-based standard format"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.11"
 license = "MIT"
 authors = [
   { name = "Alan Wilter", email = "alan.wilter@eye2gene.com" },
@@ -139,13 +139,11 @@ convention = "google"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
-branch = "main"
 commit_message = "chore(release): {version}"
-allow_zero_version = true  # semantic-release v10 defaults it to false, which jumps straight to 1.0.0
 # Put the new version in uv.lock too, inside the release commit. It runs in the semantic-release action's
-# container, which has no uv; keep the uv range in step with the uv_build pin in [build-system].
+# container, which has no uv; keep the uv range the same as [tool.uv] required-version.
 build_command = """
-    python -m pip install --quiet "uv>=0.12,<0.13"
+    python -m pip install --quiet "uv>=0.12,<1.0"
     uv lock --upgrade-package "$PACKAGE_NAME"
     git add uv.lock
 """
@@ -166,7 +164,11 @@ include = ["src"]
 error-on-warning = true
 
 [tool.uv]
+required-version = ">=0.12,<1.0"
 exclude-newer = "7 days"
 package = true
 default-groups = ["dev"]
-cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { git = { commit = true, tags = true } }
+]
