@@ -70,3 +70,69 @@ When adding a dependency, a tool, or anything a build fetches (Dockerfile, CI wo
 - A pin lives in a committed file with a `just` recipe to move it (e.g. `crystal-eye-version.txt`, `ffmpeg.sha256`), so an update is a reviewed commit, and a check builds and runs what the pin produces before it is deployed.
 - Our own private binaries (e.g. `crystal-eye`) come from the eye2Gene GitHub releases with `gh release download`, pinned by version and checked by the build.
 - `uv audit` must pass, and a PR says why a new dependency or tool is needed and where it comes from.
+
+# Project: Process DCM
+
+Python library and CLI (`process-dcm`) that extracts images from ophthalmic DICOM files (OCT, fundus, FA, SLO,
+Optomap, ...) into PNG/JPG/WEBP plus one `metadata.json` per acquisition, with optional patient anonymisation.
+
+## Layout and tooling
+
+This repo follows the Eye2Gene [e2g-pypkg](https://github.com/eye2Gene/e2g-pypkg) template (tracked via `.cruft.json`):
+
+- src layout: `src/process_dcm/` with `main.py` (Typer CLI, entry point `process-dcm`), `utils.py` (processing),
+  `const.py` (`ImageModality` / `ModalityFlag`). Tests and sample DICOMs live in `tests/`.
+- uv for environments and locking, `uv_build` as build backend. No Poetry.
+- Ruff for formatting and linting (line length 120, `target-version = "py311"`), ty for type checking. No mypy, no pre-commit.
+- pytest with coverage, `-n auto` (pytest-xdist) by default. Warnings are errors (see `tests/conftest.py`).
+- `just` recipes are the single interface for dev commands; CI runs the same recipes.
+- Minimum Python 3.11 (ruff targets it). Develop with 3.12 (`.python-version`). Move both to 3.12 once every
+  Eye2Gene consumer of process-dcm is on 3.12.
+- process-dcm keeps its own per-dataset state in plain `pdcm_*` attributes on pydicom datasets (`pdcm_modality`,
+  `pdcm_group`, `pdcm_source`; see the comment at the top of `utils.py`). Never store it in real DICOM elements:
+  pydicom 3 warns on every non-conformant value and the file's own values get clobbered.
+
+## Commands
+
+```bash
+uv sync                      # create .venv with all dev groups
+just qa                      # ruff format + ruff check --fix + ty check + uv audit
+just ci                      # same, without fixes (what CI runs)
+just test [PYTEST_ARGS]      # pytest with coverage, parallel
+just pdb [PYTEST_ARGS]       # pytest --pdb, single process
+just build                   # uv build -> dist/
+uv run process-dcm INPUT -o OUT -f png --overwrite   # run the CLI
+```
+
+## Output contract
+
+- Default layout: one flat folder per acquisition group, `{patient}_{date}_{time}[_{hash}]_{eye}_{modality}.DCM`,
+  with `source_file` in the metadata relative to the current working directory. Downstream tools rely on this.
+  `--preserve_folder_structure`, `--keep_dcm_name_as_folder` and `--relative_source_file` are opt-in alternatives
+  added for a downstream tool (PR #6); never flip their defaults.
+- Unknown OP/OPT images are exported under the `U` modality; only unsupported objects (other modalities without a
+  recognisable modality code, OCT angiography report renderings) are skipped.
+- A group may mix eyes and acquisition times (issue #5). Each image entry carries its own `laterality` and
+  `scan_datetime`; the series-level `laterality` is `B` and the folder eye is `OU` when the group mixes eyes, and the
+  exam-level `scan_datetime` is the earliest in the group.
+- `metadata.json` carries `parser_version` for the JSON format and `py_dcm_version` for the package version. Bump
+  `parser_version` whenever the metadata schema changes. History: 1.5.3 added `source_file`; 1.6.0 added
+  `sop_instance_uid` / `sop_class_uid` per image and `photo_locations` entries with a `start` point only for circular
+  B-scans; 1.7.0 (current) added `laterality` / `scan_datetime` per image.
+
+## Testing notes
+
+- `tests/example_dir` (~625 MB of sample DICOMs) is deliberately not in git. Tests that need it skip when it is absent.
+- Many tests assert MD5 hashes of generated PNGs and of `metadata.json` (minus its last lines, which hold the version
+  numbers). PNG bytes depend on the Pillow version and on the platform (macOS vs Linux wheels) even when pixels are
+  identical, so PNG hash lists accept several values. When a dependency bump changes a hash, verify pixels are unchanged
+  before appending the new hash. Metadata hashes have a single value: input files are processed in sorted order.
+- `tests/DICOM/0001-0003` are symlinks to `tests/example-dcms`; the mirrored output layout must not resolve symlinks.
+
+## Releases
+
+- Conventional commits only. Merging to `main` runs `release.yml`: python-semantic-release computes the version from
+  commit messages, updates `pyproject.toml` and `CHANGELOG.md`, tags, creates the GitHub Release, and publishes to
+  PyPI via trusted publishing. Never edit the version by hand.
+- The package version is read at runtime from installed metadata (`process_dcm.__version__`); there is no hardcoded
+  version string in the source.
