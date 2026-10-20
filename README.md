@@ -101,6 +101,7 @@ series-level `laterality` is `B` and the exam-level `scan_datetime` is the earli
 ```txt
 process-dcm/
 ├── .github/
+│   ├── copilot-instructions.md # The AI rules, for GitHub Copilot (chat, code review, coding agent)
 │   └── workflows/
 │       ├── ci.yml              # Calls reusable CI from e2g-workflows
 │       └── release.yml         # Semantic release + publish on main
@@ -108,7 +109,8 @@ process-dcm/
 │   └── steering/
 │       ├── commits.md          # Conventional commit rules for Kiro
 │       ├── python.md           # Python coding standards for Kiro
-│       └── safety.md           # Command safety guardrails for Kiro
+│       ├── safety.md           # Command safety guardrails for Kiro
+│       └── supply-chain.md     # Supply-chain rules: signed upstream source, pins, 7-day quarantine
 ├── .vscode/
 │   ├── extensions.json         # Recommended VS Code/Kiro extensions
 │   └── settings.json           # Editor settings (Ruff, pytest, etc.)
@@ -128,7 +130,8 @@ process-dcm/
 ├── .editorconfig               # Editor-agnostic formatting rules
 ├── .gitignore
 ├── .python-version             # Pin Python version for uv
-├── CLAUDE.md                   # AI rules for Claude CLI/VS Code
+├── AGENTS.md                   # The same AI rules, for Codex, Copilot's coding agent and other agents
+├── CLAUDE.md                   # The same AI rules, for Claude Code
 ├── README.md
 ├── justfile                    # Command runner (just qa, just test, etc.)
 └── pyproject.toml              # Project metadata, deps, tool config
@@ -137,8 +140,8 @@ process-dcm/
 **Key files:**
 
 - **`.github/workflows/`** — CI calls the shared [e2g-workflows](https://github.com/eye2Gene/e2g-workflows) reusable workflow. CI logic is centralised there.
-- **`.kiro/steering/`** — AI steering rules loaded automatically by Kiro. Enforces team coding standards.
-- **`CLAUDE.md`** — Same AI rules for Claude CLI/VS Code users, plus project-specific notes.
+- **`.kiro/steering/`** — The AI rules (Python style, commit messages, command safety, supply-chain safety), loaded automatically by Kiro.
+- **`CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`** — The same rules for Claude Code, for Codex and Copilot's coding agent, and for Copilot chat and code review. They come from the template: change them there and run `cruft update`. `CLAUDE.md` also carries project-specific notes.
 - **`.vscode/`** — Shared editor settings (Ruff format-on-save, pytest discovery, recommended extensions). Works in VS Code and Kiro out of the box.
 - **`justfile`** — Single interface for all dev commands. CI uses the same recipes, so local and CI behaviour match.
 - **`.cruft.json`** — Template tracking. Run `cruft update` to pull improvements from [e2g-pypkg](https://github.com/eye2Gene/e2g-pypkg).
@@ -221,10 +224,12 @@ This project publishes to [PyPI.org](https://pypi.org/project/process-dcm/) usin
 
 This project includes configuration for AI coding assistants:
 
-- **Kiro**: `.kiro/steering/` contains rules for Python style, commit messages, and command safety
-- **Claude**: `CLAUDE.md` contains the same rules in Claude's format
+- **Kiro**: `.kiro/steering/` contains the rules for Python style, commit messages, command safety and supply-chain safety
+- **Claude Code**: `CLAUDE.md`
+- **Codex, Copilot's coding agent and other agents**: `AGENTS.md`
+- **Copilot chat and code review**: `.github/copilot-instructions.md`
 
-These are committed to git so all contributors get consistent AI behaviour. No personal setup required — just open the project in Kiro or Claude and the rules apply automatically.
+These are committed to git so all contributors get consistent AI behaviour. No personal setup required — open the project in any of those tools and the rules apply automatically. The four files carry the same rules and are maintained in the [e2g-pypkg](https://github.com/eye2Gene/e2g-pypkg) template.
 
 ## Keeping up with template updates
 
