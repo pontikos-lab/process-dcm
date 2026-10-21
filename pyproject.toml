@@ -5,6 +5,7 @@ description = "Python library and app to extract images from DCM in a JSON-based
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [
   { name = "Alan Wilter", email = "alan.wilter@eye2gene.com" },
   { name = "Eye2Gene", email = "dev@eye2gene.com" },
