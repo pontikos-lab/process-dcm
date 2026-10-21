@@ -72,7 +72,7 @@ build-backend = "uv_build"
 
 [tool.coverage.report]
 omit = ["__main__.py"]
-fail_under = 90  # minimum coverage required, but aim for 100% though
+fail_under = 90  # the floor for src/ (checked by `just test` after pytest), but aim for 100% though
 exclude_also = [
   "if TYPE_CHECKING:",
   "if typing.TYPE_CHECKING:",
@@ -92,7 +92,8 @@ addopts = [
   "--cov-report=term-missing:skip-covered",
   "--cov-report=xml",
   "--cov=src/",
-  "--cov=tests/",
+  "--cov=tests/",  # the report lists test code that never ran; the floor below counts src/ alone
+  "--cov-fail-under=0",  # the gate is the src/ step of `just test`
   "--dist=loadscope",
   "--durations=5",
   "-n",
