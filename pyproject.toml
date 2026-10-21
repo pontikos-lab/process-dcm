@@ -167,6 +167,7 @@ error-on-warning = true
 [tool.uv]
 required-version = ">=0.12,<1.0"
 exclude-newer = "7 days"
+exclude-newer-package = { certifi = "2026-10-21T00:00:00Z" }  # certifi: PYSEC-2026-4320 fix, drop it after 2026-10-27
 package = true
 default-groups = ["dev"]
 cache-keys = [
