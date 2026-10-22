@@ -39,6 +39,11 @@ jobs:
 
       - uses: astral-sh/setup-uv@main
 
+      # The semantic-release action runs in its own container, without uv: its build_command (pyproject.toml) runs
+      # this copy of the job's uv, so nothing is installed from PyPI for the release
+      - name: Hand the job's uv to semantic-release
+        run: install -D -m 0755 "$(command -v uv)" .release-tools/uv
+
       - name: Python Semantic Release
         id: release
         uses: python-semantic-release/python-semantic-release@v10

@@ -143,10 +143,11 @@ convention = "google"
 version_toml = ["pyproject.toml:project.version"]
 commit_message = "chore(release): {version}"
 # Put the new version in uv.lock too, inside the release commit. It runs in the semantic-release action's
-# container, which has no uv; keep the uv range the same as [tool.uv] required-version.
+# container, which has no uv: release.yml copies the job's own uv (from setup-uv) into .release-tools/ for it, so
+# nothing is installed from PyPI. `set -eu` (the container's shell is sh) aborts the release if the lock fails.
 build_command = """
-    python -m pip install --quiet "uv>=0.12,<1.0"
-    uv lock --upgrade-package "$PACKAGE_NAME"
+    set -eu
+    .release-tools/uv lock --upgrade-package "$PACKAGE_NAME"
     git add uv.lock
 """
 
